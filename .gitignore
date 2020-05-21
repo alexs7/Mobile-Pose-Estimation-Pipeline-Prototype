@@ -9,3 +9,4 @@ calibration iphone data/
 iphone_data/
 *.pyc
 calibration data
+poses
