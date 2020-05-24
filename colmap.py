@@ -182,6 +182,15 @@ def model_converter(database_path, input_path, output_path, ini_save_path=None, 
 
     subprocess.check_call(colmap_command)
 
+def model_aligner(path_to_model, path_to_geo_registered_model, path_to_text_file):
+    colmap_command = [colmap_bin, "model_aligner", "--input_path", path_to_model,
+                                                    "--output_path", path_to_geo_registered_model,
+                                                    "--ref_images_path", path_to_text_file,
+                                                    "--robust_alignment", "1",
+                                                    "--robust_alignment_max_error", "0.3"]
+    # Call COLMAP.
+    subprocess.check_call(colmap_command)
+
 # def extract_features(path, db):
 #     path = path + "/*.jpg"
 #     all_query_image_descs = []
@@ -219,3 +228,4 @@ def model_converter(database_path, input_path, output_path, ini_save_path=None, 
 #         all_query_image_descs.append(query_image_descs)
 #
 #     return all_query_image_descs
+
