@@ -97,7 +97,7 @@ def vocab_tree_matcher(database_path, match_list_path=None, ini_save_path=None, 
     # print(colmap_command)
     subprocess.check_call(colmap_command)
 
-def colmap_exhaustive_matcher(database_path, match_list_path=None, ini_save_path=None, params=None):
+def exhaustive_matcher(database_path, match_list_path=None, ini_save_path=None, params=None):
 
     # Find and read template INI.
     input_ini_file = os.path.join('template_inis', 'colmap_exhaustive_matcher.ini')
