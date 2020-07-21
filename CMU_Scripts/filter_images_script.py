@@ -5,7 +5,7 @@
 # /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/official_datasets/CMU-Seasons-Extended/slice2/ (whatever number)
 # some folders have to be created manually
 
-# run this in base dir
+# run these below in 'base dir'
 # rm -rf undistorted/*
 # mkdir -p undistorted/base undistorted/session_1/ undistorted/session_2/ undistorted/session_3/ undistorted/session_4/ undistorted/session_5/ undistorted/session_6/ undistorted/session_7/ undistorted/session_8/ undistorted/session_9/
 
@@ -35,7 +35,6 @@ query_images_folder = "query/"
 query_undistorted_images_folder = "undistorted/"
 database_images_folder = "database/"
 database_undistorted_images_folder = "undistorted/base/"
-session_lengths = []
 
 def undistort(img):
     distortion_params = np.array([-0.399431, 0.188924, 0.000153, 0.000571])
@@ -58,7 +57,6 @@ for file in glob.glob("*.jpg"):
 
 print("Database Sizes:")
 print("Total: " + str(i))
-session_lengths.append(i)
 
 i=0
 os.chdir("../"+query_images_folder)
@@ -119,22 +117,11 @@ for file in glob.glob("*.jpg"):
 print("Query Sizes:")
 print("Total: " + str(i))
 print("Sunny_No_Foliage: " +str(len(Sunny_No_Foliage)))
-session_lengths.append(len(Sunny_No_Foliage))
 print("Sunny_Foliage: " +str(len(Sunny_Foliage)))
-session_lengths.append(len(Sunny_Foliage))
 print("Cloudy_Foliage: " +str(len(Cloudy_Foliage)))
-session_lengths.append(len(Cloudy_Foliage))
 print("Overcast_Mixed_Foliage: " +str(len(Overcast_Mixed_Foliage)))
-session_lengths.append(len(Overcast_Mixed_Foliage))
 print("Low_Sun_Mixed_Foliage: " +str(len(Low_Sun_Mixed_Foliage)))
-session_lengths.append(len(Low_Sun_Mixed_Foliage))
 print("Cloudy_Mixed_Foliage: " +str(len(Cloudy_Mixed_Foliage)))
-session_lengths.append(len(Cloudy_Mixed_Foliage))
 print("Low_Sun_No_Foliage_Snow: " +str(len(Low_Sun_No_Foliage_Snow)))
-session_lengths.append(len(Low_Sun_No_Foliage_Snow))
 print("Low_Sun_Foliage: " +str(len(Low_Sun_Foliage)))
-session_lengths.append(len(Low_Sun_Foliage))
 print("Overcast_Foliage: " +str(len(Overcast_Foliage)))
-session_lengths.append(len(Overcast_Foliage))
-
-np.savetxt("../session_lengths.txt", session_lengths)
