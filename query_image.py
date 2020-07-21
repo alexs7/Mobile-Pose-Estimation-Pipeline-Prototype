@@ -41,6 +41,18 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     data = fid.read(num_bytes)
     return struct.unpack(endian_character + format_char_sequence, data)
 
+def get_image_camera_center_by_name(name, images):
+    cam_center = np.array([])
+    for k,v in images.items():
+        if(v.name == name):
+            pose_r = v.qvec2rotmat()
+            pose_t = v.tvec
+            pose = np.c_[pose_r, pose_t]
+            pose = np.r_[pose, [np.array([0, 0, 0, 1])]]
+            rot = np.array(pose[0:3, 0:3])
+            cam_center = -rot.transpose().dot(pose_t)
+    return cam_center
+
 # TODO: replace this method with the text version and get the last one ?
 def read_images_binary(path_to_model_file):
     """
