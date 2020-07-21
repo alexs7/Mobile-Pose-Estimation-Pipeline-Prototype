@@ -35,7 +35,8 @@ def calc_scale_COLMAP_ARCORE(arcore_poses_path, colmap_model_from_arcore_images_
 
     return np.mean(scales)
 
-def calc_scale_COLMAP(original_images_path, colmap_model_images_path):
+def calc_scale_COLMAP(slice, colmap_model_images_path):
+    original_images_path = "/home/alex/Datasets/Extended-CMU-Seasons/Extended-CMU-Seasons/"+slice+"/ground-truth-database-images-"+slice+".txt"
     model_images = read_images_binary(colmap_model_images_path)
     original_images = []
     with open(original_images_path) as f:
