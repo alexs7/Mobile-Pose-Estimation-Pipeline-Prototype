@@ -6,7 +6,7 @@ import numpy as np
 # /home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/data/live
 # /home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/data/gt
 
-def gen_query_txt(dir, save_sessions = False):
+def gen_query_txt(dir, base_images_no = None):
     session_nums = []
     images = []
     for folder in glob.glob(dir+"/session_*"):
@@ -21,6 +21,6 @@ def gen_query_txt(dir, save_sessions = False):
         for image in images:
             f.write("%s\n" % image)
 
-    print("session_nums = " + str(session_nums) + " - Dont forget to add the base ones!")
-
-    if(save_sessions) : np.savetxt(dir+"/../session_lengths.txt", session_nums)
+    session_nums =  [base_images_no] + session_nums
+    if(base_images_no is not None) : np.savetxt(dir+"/../session_lengths.txt", session_nums)
+    print("session_nums = " + str(session_nums))
