@@ -1,11 +1,7 @@
 # This file is to be used to separate files in folders (per weather condition) from the query folder or database. Only to use with CMU-Seasons dataset
 # The ones in database folder are used for reconstruction
-#  Note: rm session_1/* session_2/* session_3/* session_4/* session_5/* session_6/* session_7/* session_8/* session_9/* -> removed all seperated files if needed
-# the folder has to look like this:
-# /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/official_datasets/CMU-Seasons-Extended/slice2/ (whatever number)
-# some folders have to be created manually
 
-# run these below in 'base dir'
+# run these below in 'base dir' if needed
 # rm -rf undistorted/*
 # mkdir -p undistorted/base undistorted/session_1/ undistorted/session_2/ undistorted/session_3/ undistorted/session_4/ undistorted/session_5/ undistorted/session_6/ undistorted/session_7/ undistorted/session_8/ undistorted/session_9/
 
@@ -28,7 +24,6 @@ Low_Sun_Foliage = [] # 4 Mar 2011
 Overcast_Foliage = [] # 28 Jul 2011
 
 i = 0
-# example: "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/official_datasets/CMU-Seasons-Extended/slice2/"
 # dont forget trailing "/"
 base_dir = sys.argv[1]
 query_images_folder = "query/"
