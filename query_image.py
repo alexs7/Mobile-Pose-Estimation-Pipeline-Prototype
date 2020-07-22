@@ -101,3 +101,9 @@ def get_query_image_id():
     images = read_images_binary("colmap_data/data/new_model/images.bin")
     id = images.get(len(images)).id
     return id
+
+def get_images_names(all_images):
+    image_names = []
+    for k,v in all_images.items():
+        image_names.append(v.name)
+    return image_names
