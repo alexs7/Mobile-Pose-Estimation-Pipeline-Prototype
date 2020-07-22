@@ -1,3 +1,0 @@
-//commands to run
-python3 sparse_reconstuctor.py colmap_data/data/database.db colmap_data/data/images colmap_data/data/model
-python3 evaluator.py
