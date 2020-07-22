@@ -6,6 +6,8 @@ import numpy as np
 # /home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/data/live
 # /home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/data/gt
 
+# TODO: might need to refactor this
+
 def gen_query_txt(dir, base_images_no = None):
     session_nums = []
     images = []
