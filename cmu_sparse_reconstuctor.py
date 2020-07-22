@@ -24,7 +24,7 @@ colmap.vocab_tree_matcher(base_db_path)
 colmap.mapper(base_db_path, base_images_dir, base_model_dir)
 
 if(arcore):
-    scale = calc_scale_COLMAP_ARCORE("/home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/local_datasets/Coop/all_sessions/base_reference_data/", base_model_dir+"/0/images.bin")
+    scale = calc_scale_COLMAP_ARCORE("/home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/local_datasets/Coop/reference_data/base_reference_data/", base_model_dir+"/0/images.bin")
 else:
     scale = calc_scale_COLMAP(path, base_model_dir+"/0/images.bin")
 
