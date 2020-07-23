@@ -219,7 +219,7 @@ def model_aligner(path_to_model, path_to_geo_registered_model, path_to_text_file
                                                     "--output_path", path_to_geo_registered_model,
                                                     "--ref_images_path", path_to_text_file,
                                                     "--robust_alignment", "1",
-                                                    "--robust_alignment_max_error", "0.3"]
+                                                    "--robust_alignment_max_error", "0.2"]
     # Call COLMAP.
     subprocess.check_call(colmap_command)
 
