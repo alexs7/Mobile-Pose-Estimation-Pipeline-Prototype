@@ -1,7 +1,7 @@
 import sys
 import os
 import colmap
-from arrange_sessions import gen_query_txt
+from arrange_sessions import gen_query_txt, gen_base_cam_centers_txt
 import subprocess
 import glob
 from get_scale import calc_scale_COLMAP, calc_scale_COLMAP_ARCORE
@@ -10,12 +10,15 @@ import numpy as np
 
 # In order for this to work you have to transfer the images manually into the correct folders first
 path = sys.argv[1] # i.e /home/alex/fullpipeline/colmap_data/CMU_data/slice4/
+slice = path.split('/')[-2]
 arcore = sys.argv[2] == '1'
 
 #base mode paths
 base_db_path = path+"base/database.db"
 base_images_dir = path+"base/images"
 base_model_dir = path+"base/model"
+reference_model_images_path = "/home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/local_datasets/CMU-Extended-Seasons_data/"+slice+"/sparse/images.bin"
+alignment_reference_cam_centers_txt = path+"base/base_images_cam_centers.txt"
 
 base_images_no = len(glob.glob1(base_images_dir,"*.jpg"))
 
@@ -25,10 +28,11 @@ colmap.mapper(base_db_path, base_images_dir, base_model_dir)
 
 if(arcore):
     scale = calc_scale_COLMAP_ARCORE("/home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/local_datasets/Coop/reference_data/base_reference_data/", base_model_dir+"/0/images.bin")
+    np.savetxt(path+"scale.txt", [scale])
 else:
-    scale = calc_scale_COLMAP(path, base_model_dir+"/0/images.bin")
-
-np.savetxt(path+"scale.txt", [scale])
+    gen_base_cam_centers_txt(base_images_dir, reference_model_images_path)
+    # Note: this will overwrite the first model
+    colmap.model_aligner(base_model_dir+"/0", base_model_dir+"/0", alignment_reference_cam_centers_txt)
 
 query_images_dir = path+"live/images/"
 gen_query_txt(query_images_dir, base_images_no)
