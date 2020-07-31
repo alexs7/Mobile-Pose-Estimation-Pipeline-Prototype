@@ -18,7 +18,7 @@ def gen_base_cam_centers_txt(base_images_dir, reference_model_images_path):
     for file in glob.glob(base_images_dir+"/*.jpg"):
         image_name = file.split("/")[-1]
         camera_center = get_image_camera_center_by_name(image_name, base_model_images) # assume all images are localised in the reference model
-        data = image_name + " " + str(camera_center[0]) + " " + str(camera_center[1]) + " " + str(camera_center[2]) + "\n"
+        data = image_name + " " + str(camera_center[0]) + " " + str(camera_center[1]) + " " + str(camera_center[2])
         images.append(data)
 
     with open(base_images_dir+'/../base_images_cam_centers.txt', 'w') as f:
