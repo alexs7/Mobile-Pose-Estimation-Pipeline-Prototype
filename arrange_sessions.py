@@ -10,16 +10,25 @@ from query_image import get_image_camera_center_by_name, read_images_binary
 # TODO: might need to refactor this
 
 # this will generate the text file needed for model aligner
+# the resulting file will contain base images names with their corresponding reference model centers
 def gen_base_cam_centers_txt(base_images_dir, reference_model_images_path):
-    session_nums = []
     images = []
-    base_model_images = read_images_binary(reference_model_images_path)
+    base_images = []
 
     for file in glob.glob(base_images_dir+"/*.jpg"):
-        image_name = file.split("/")[-1]
-        camera_center = get_image_camera_center_by_name(image_name, base_model_images) # assume all images are localised in the reference model
-        data = image_name + " " + str(camera_center[0]) + " " + str(camera_center[1]) + " " + str(camera_center[2])
-        images.append(data)
+        name = file.split("/")[-1]
+        base_images.append(name)
+
+    with open(reference_model_images_path) as f:
+        lines = f.readlines()
+
+    for line in lines:
+        image_name = line.split(" ")[0]
+        if(image_name in base_images):
+            x = line.split(" ")[-4]
+            y = line.split(" ")[-3]
+            z = line.split(" ")[-2]
+            images.append(image_name + " " + x + " " + y + " " + z)
 
     with open(base_images_dir+'/../base_images_cam_centers.txt', 'w') as f:
         for image in images:
