@@ -9,6 +9,7 @@ import sys
 import numpy as np
 
 # In order for this to work you have to transfer the images manually into the correct folders first
+# Remember to undistort images first
 path = sys.argv[1] # i.e /home/alex/fullpipeline/colmap_data/CMU_data/slice4/
 slice = path.split('/')[-2]
 arcore = sys.argv[2] == '1'
@@ -17,7 +18,7 @@ arcore = sys.argv[2] == '1'
 base_db_path = path+"base/database.db"
 base_images_dir = path+"base/images"
 base_model_dir = path+"base/model"
-reference_model_images_path = "/home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/local_datasets/CMU-Extended-Seasons_data/"+slice+"/sparse/images.bin"
+reference_model_images_path = "/home/alex/Datasets/Extended-CMU-Seasons/Extended-CMU-Seasons/"+slice+"/ground-truth-database-images-"+slice+".txt"
 alignment_reference_cam_centers_txt = path+"base/base_images_cam_centers.txt"
 
 base_images_no = len(glob.glob1(base_images_dir,"*.jpg"))
