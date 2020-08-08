@@ -1,5 +1,3 @@
-import sys
-import os
 import colmap
 from arrange_sessions import gen_query_txt, gen_base_cam_centers_txt
 import subprocess
