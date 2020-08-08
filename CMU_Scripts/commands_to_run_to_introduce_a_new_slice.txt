@@ -1,0 +1,7 @@
+# Move this to a Python Script. The only thing you need to change is "slice4" or whatever to "slice10" or whatever
+
+cp /home/alex/Datasets/Extended-CMU-Seasons/Extended-CMU-Seasons/slice11/database/*c0*.jpg /home/alex/fullpipeline/colmap_data/CMU_data/slice11/base/images &&
+python3 CMU_Scripts/undistor_folder.py /home/alex/fullpipeline/colmap_data/CMU_data/slice11/base/images/ 0 &&
+python3 CMU_Scripts/copy_images_script.py /home/alex/Datasets/Extended-CMU-Seasons/Extended-CMU-Seasons/slice11/query/ /home/alex/fullpipeline/colmap_data/CMU_data/slice11/live/images/ &&
+python3 CMU_Scripts/undistor_folder.py /home/alex/fullpipeline/colmap_data/CMU_data/slice11/live/images/ 1 &&
+python3 CMU_Scripts/pick_random_images.py /home/alex/fullpipeline/colmap_data/CMU_data/slice11/live/images/ /home/alex/fullpipeline/colmap_data/CMU_data/slice11/gt/images/query_images/ 20
