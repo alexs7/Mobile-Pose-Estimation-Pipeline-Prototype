@@ -10,3 +10,4 @@ iphone_data/
 *.pyc
 calibration data
 poses
+.idea/
