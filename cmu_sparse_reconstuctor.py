@@ -9,7 +9,7 @@ import numpy as np
 # In order for this to work you have to transfer the images manually into the correct folders first
 # Remember to undistort images first
 path = sys.argv[1] # i.e /home/alex/fullpipeline/colmap_data/CMU_data/slice4/
-slice = path.split('/')[-2]
+slice = path.split('/')[-2].split("_")[0] # for slice4_4, slice4_5 etc etc
 arcore = sys.argv[2] == '1'
 
 #base mode paths
