@@ -1,3 +1,4 @@
+# 13/10/2020 - This is used only for simple recontructions - cmu_* is used instead for the paper benchmarks
 import sys
 import os
 import colmap
