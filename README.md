@@ -18,6 +18,6 @@ One you run this code for all the CMU slices (or retail shop) then you will want
 Notes: 
 
  1. This repo is still under construction. For any questions please
-        contact ar2056(at).bath.ac.uk.   
+        contact ar2056(at)bath.ac.uk.   
  2. The data will have to be added for the
         code to run. Once you do add it it is easy to replace it with yours.
