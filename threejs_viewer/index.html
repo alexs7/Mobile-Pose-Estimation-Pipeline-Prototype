@@ -6,8 +6,8 @@
   <title>ARCore Debugger</title>
   <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.js"></script>
-  <script src="TrackballControls.js"></script>
-<!--  <script src="OrbitControls.js"></script>-->
+<!--  <script src="TrackballControls.js"></script>-->
+  <script src="OrbitControls.js"></script>
   <script src="script.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" integrity="sha256-KM512VNnjElC30ehFwehXjx1YCHPiQkOPmqnrWtpccM=" crossorigin="anonymous"></script>
@@ -20,42 +20,27 @@
 
 <canvas id="drawingSurface"></canvas>
 
-<!--<div class="image_preview">-->
-<!--  <img src="640x480.jpg" class="frame">-->
-<!--</div>-->
+<div class="image_preview">
+  <img src="640x480.jpg" class="frame">
+</div>
 
-<!--<div class="colmap_result_image_preview">-->
-<!--  <img src="640x480.jpg" class="colmap_result_frame">-->
-<!--</div>-->
+<div class="colmap_result_image_preview">
+  <img src="640x480.jpg" class="colmap_result_frame">
+</div>
 
 <div class="controls">
-  <button class="load_sorted_points btn btn-primary">Load Live Model</button>
-  <div id="slider">
-     <div id="custom-handle" class="ui-slider-handle"></div>
-  </div>
-  <button class="reset btn btn-primary">Reset Scene</button>
-  <button class="loadBaseModel btn btn-primary">Load Base Model</button>
-  <button class="loadAllPoses btn btn-primary">Load All Poses</button>
-
-  <span class="label basePoses">Base Poses</span>
-  <span class="label sessionPoses">Session Poses</span>
-  <span class="label queryPoses">Query Poses</span>
-<!--  <button class="loadCompressedModel_CM btn btn-primary">Load Compressed Model (Cameras Mean)</button>-->
-<!--  <button class="loadCompressedModel_VMM btn btn-primary">Load Compressed Model (VM Mean)</button>-->
-<!--  <button class="loadColmapPoses btn btn-primary">Load Camera Poses</button>-->
-<!--  <button class="loadQueryColmapPose btn btn-primary">Load Query Camera Pose</button>-->
-<!--  <button class="useCameraDisplayOrientedPose btn btn-light">Use CameraDisplayOrientedPose</button>-->
-<!--  <button class="useCameraPose btn btn-light">Use CameraPose</button>-->
-<!--  <button class="localiseButton btn btn-primary">Localise (This will kill the server)</button>-->
-<!--  <button class="viewARCoreCame btn btn-primary">View From ARCore Camera (NOT WORKING)</button>-->
-<!--  <button class="resetCamera btn btn-primary">Reset World Camera</button>-->
-<!--  <button class="loadCOLMAPpoints btn btn-primary">Load 3D Points</button>-->
-<!--  <button class="exportPoints btn btn-primary">Export 3D Points for Alignment</button>-->
-<!--  <br>-->
-<!--  <label>Size</label>-->
-<!--  <div class="slider_size"></div>-->
-<!--  <label>Scale</label>-->
-<!--  <div class="slider_scale"></div>-->
+  <button class="useCameraDisplayOrientedPose btn btn-light">Use CameraDisplayOrientedPose</button>
+  <button class="useCameraPose btn btn-light">Use CameraPose</button>
+  <button class="localiseButton btn btn-primary">Localise (This will kill the server)</button>
+  <button class="viewARCoreCame btn btn-primary">View From ARCore Camera (NOT WORKING)</button>
+  <button class="resetCamera btn btn-primary">Reset World Camera</button>
+  <button class="loadCOLMAPpoints btn btn-primary">Load 3D Points</button>
+  <button class="exportPoints btn btn-primary">Export 3D Points for Alignment</button>
+  <br>
+  <label>Size</label>
+  <div class="slider_size"></div>
+  <label>Scale</label>
+  <div class="slider_scale"></div>
 </div>
 
 </body>

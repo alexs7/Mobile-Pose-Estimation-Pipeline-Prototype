@@ -21,44 +21,6 @@ html, body {
     height: 100%;
 }
 
-.label {
-    position: relative;
-    display: block;
-}
-
-.basePoses{
-    width: 50%;
-    padding: 4px;
-    background-color: limegreen;
-    color: white;
-    border-radius: 4px;
-}
-
-.sessionPoses{
-    width: 50%;
-    padding: 4px;
-    background-color: blue;
-    color: white;
-    border-radius: 4px;
-}
-
-.queryPoses{
-    width: 50%;
-    padding: 4px;
-    background-color: yellow;
-    color: black;
-    border-radius: 4px;
-}
-
-#custom-handle {
-    width: 3em;
-    height: 1.6em;
-    top: 50%;
-    margin-top: -.8em;
-    text-align: center;
-    line-height: 1.6em;
-  }
-
 .image_preview {
     top: 1%;
     left: 1%;
@@ -77,14 +39,14 @@ html, body {
 }
 
 .colmap_result_image_preview > img {
-    width: 480px;
-    height: 640px;
+    width: 320px;
+    height: 240px;
 }
 
 
 .controls{
-    width : 15%;
-    top: 1%;
+    width : 20%;
+    top: 30%;
     left: 1%;
     position: absolute;
 }
