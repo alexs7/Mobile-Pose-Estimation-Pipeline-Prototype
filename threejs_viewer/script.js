@@ -222,6 +222,22 @@ window.onload = function() {
 
     app.post('/localise', (req, res) => {
 
+        var query_location = "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/"+req.body.frameName;
+
+        fs.writeFileSync(query_location,
+            req.body.frameString, 'base64', function(err) {
+            console.log(err);
+            });
+
+        fs.writeFileSync(
+            "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/query_name.txt",
+            query_location,
+            function (err) {
+                if (err) return console.log(err);
+            });
+
+        debugger;
+
         var pose = localise(camera_pose, cameraPoseStringMatrix);
         //draw points
         debug_COLMAP_points(0.071);
