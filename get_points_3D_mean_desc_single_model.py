@@ -1,13 +1,13 @@
-# run this to get the avg of the 3D desc of a point same order as in points3D
-# be careful that you can get the base model's avg descs or the live's model descs - depends on the points images ids
-
-# the idea here is that a point is seen by the base model images and live model images
-# obviously the live model images number > base model images number for a point
+# This is used for single frame localization from a phone:
+# Example: python3 get_points_3D_mean_desc_single_model.py \
+#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/database.db \
+#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/images.bin \
+#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/points3D.bin \
+#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/descriptors_avg/avg_descs.npy
 import sys
 
 import numpy as np
 from database import COLMAPDatabase
-from parameters import Parameters
 from point3D_loader import read_points3d_default, index_dict
 from query_image import read_images_binary, get_images_ids, get_images_names_from_sessions_numbers
 

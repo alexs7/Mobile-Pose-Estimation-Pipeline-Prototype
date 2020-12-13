@@ -223,28 +223,47 @@ window.onload = function() {
     app.post('/localise', (req, res) => {
 
         var query_location = "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/"+req.body.frameName;
+        var frameName = req.body.frameName
 
-        fs.writeFileSync(query_location,
+        fs.writeFileSync(
+            query_location,
             req.body.frameString, 'base64', function(err) {
             console.log(err);
             });
 
+        execSync("sips -r 90 /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/current_query_image/"+frameName);
+
         fs.writeFileSync(
             "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/query_name.txt",
-            query_location,
+            frameName,
             function (err) {
                 if (err) return console.log(err);
             });
 
-        debugger;
+        fs.writeFileSync(
+            "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_data/cameraPose.txt",
+            req.body.cameraPose, function(err) {
+            console.log(err);
+        });
 
-        var pose = localise(camera_pose, cameraPoseStringMatrix);
-        //draw points
-        debug_COLMAP_points(0.071);
-        exportARCorePointCloud();
+        execSync("python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName,
+            { cwd: '/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/' });
 
-        pose = pose.split(", ");
-        res.status(200).json({ server_pose: pose, arcore_pose: camera_pose });
+        read3Dpoints();
+        renderer.render( scene, camera );
+
+        debugger
+
+        var colmapPoints = loadPoints3DFromFile();
+        res.status(200).json({ points: colmapPoints });
+
+        // var pose = localise(camera_pose, cameraPoseStringMatrix);
+        // //draw points
+        // debug_COLMAP_points(0.071);
+        // exportARCorePointCloud();
+        //
+        // pose = pose.split(", ");
+        // res.status(200).json({ server_pose: pose, arcore_pose: camera_pose });
     });
 
     app.post('/getModel', (req, res) => {
@@ -424,7 +443,7 @@ function read3Dpoints(){
         )
     }
 
-    var material =  new THREE.PointsMaterial( { color: red, size: 0.02 } );
+    var material =  new THREE.PointsMaterial( { color: red, size: 0.01 } );
     colmap_points = new THREE.Points( geometry, material );
 
     colmap_points.rotation.z = Math.PI/2;

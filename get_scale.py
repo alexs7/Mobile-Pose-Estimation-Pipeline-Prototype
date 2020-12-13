@@ -1,6 +1,8 @@
 # This file is just to get scales between COLMAP and ARCORE, or COLMAP and COLMAP.
 # manual work to set the directories
 import glob
+import sys
+
 import numpy as np
 import random
 from query_image import read_images_binary, get_image_camera_center_by_name, get_images_names
@@ -36,6 +38,6 @@ def calc_scale_COLMAP_ARCORE(arcore_devices_poses_path, colmap_model_images_path
     print("Scale: " + str(scale))
     return scale
 
-
-calc_scale_COLMAP_ARCORE("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/bedroom/data_ar/",
-                                 "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/bedroom/model/0/images.bin")
+arcore_poses_path = sys.argv[1]
+colmap_poses_path = sys.argv[2]
+calc_scale_COLMAP_ARCORE(arcore_poses_path,colmap_poses_path)
