@@ -16,8 +16,8 @@ def add_ones(x):
 def tmp_get_pose():
     K = np.loadtxt("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/matrices/pixel_intrinsics_low_640_landscape.txt")
     query_frame_name = "query.jpg"
-    db_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/bedroom/database.db"
-    points3D_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/bedroom/model/0/points3D.bin"
+    db_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/database.db"
+    points3D_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/points3D.bin"
     query_images_dir = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/current_query_image"
     image_list_file = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_name.txt"
     descs_avg_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/descriptors_avg/avg_descs.npy"
@@ -38,7 +38,7 @@ def tmp_get_pose():
     # Step 2: Feature Matching
     start = time.time()
     train_descriptors = np.load(descs_avg_path).astype(np.float32)
-    matches = feature_matcher_wrapper(db, query_frame_name, train_descriptors, points3D_xyz, 0.7)
+    matches = feature_matcher_wrapper(db, query_frame_name, train_descriptors, points3D_xyz, 0.65)
     end = time.time()
     elapsed_time = end - start
     total_elapsed_time += elapsed_time
