@@ -124,3 +124,4 @@ def get_images_names(all_images):
     for k,v in all_images.items():
         image_names.append(v.name)
     return image_names
+

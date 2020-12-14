@@ -7,6 +7,8 @@ import numpy as np
 import os
 import sys
 
+from single_image_localization import tmp_get_pose
+
 if(len(sys.argv) == 2 ):
     scale = float(sys.argv[1])
 else:
@@ -18,7 +20,11 @@ image_id_start = get_query_image_id_new_model("query.jpg")
 points3D = get_points3D(image_id_start)
 print("Number of COLMAP 3D Points: " + str(len(points3D)))
 
+# TESTING BOTH Direct Matching Pose and COLMAP Pose
 colmap_pose = get_query_image_global_pose_new_model("query.jpg")
+colmap_pose_dm = tmp_get_pose()
+
+breakpoint()
 
 arcore_pose = get_ARCore_pose_query_image()
 print("arcore_pose: ")

@@ -51,6 +51,36 @@ def read_next_bytes(fid, num_bytes, format_char_sequence, endian_character="<"):
     data = fid.read(num_bytes)
     return struct.unpack(endian_character + format_char_sequence, data)
 
+def read_points3d_binary(path_to_model_file):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadPoints3DBinary(const std::string& path)
+        void Reconstruction::WritePoints3DBinary(const std::string& path)
+    """
+    points3D = {}
+    xyz_values = np.empty((0, 4))
+    with open(path_to_model_file, "rb") as fid:
+        num_points = read_next_bytes(fid, 8, "Q")[0]
+        for point_line_index in range(num_points):
+            binary_point_line_properties = read_next_bytes(
+                fid, num_bytes=43, format_char_sequence="QdddBBBd")
+            point3D_id = binary_point_line_properties[0]
+            xyz = np.array(binary_point_line_properties[1:4])
+            rgb = np.array(binary_point_line_properties[4:7])
+            error = np.array(binary_point_line_properties[7])
+            track_length = read_next_bytes(
+                fid, num_bytes=8, format_char_sequence="Q")[0]
+            track_elems = read_next_bytes(
+                fid, num_bytes=8*track_length,
+                format_char_sequence="ii"*track_length)
+            image_ids = np.array(tuple(map(int, track_elems[0::2])))
+            point2D_idxs = np.array(tuple(map(int, track_elems[1::2])))
+            xyz = np.r_[xyz, 1]
+            xyz = np.reshape(xyz, [1, 4])
+            xyz_values = np.r_[xyz_values, xyz]
+
+    return xyz_values
+
 def read_points3d_binary_id(path_to_model_file, id):
     """
     see: src/base/reconstruction.cc
@@ -81,8 +111,44 @@ def read_points3d_binary_id(path_to_model_file, id):
                 xyz_values = np.r_[xyz_values, xyz]
     return xyz_values
 
+def read_points3d_default(path_to_model_file):
+    """
+    see: src/base/reconstruction.cc
+        void Reconstruction::ReadPoints3DBinary(const std::string& path)
+        void Reconstruction::WritePoints3DBinary(const std::string& path)
+    """
+    points3D = {}
+    with open(path_to_model_file, "rb") as fid:
+        num_points = read_next_bytes(fid, 8, "Q")[0]
+        for point_line_index in range(num_points):
+            binary_point_line_properties = read_next_bytes(
+                fid, num_bytes=43, format_char_sequence="QdddBBBd")
+            point3D_id = binary_point_line_properties[0]
+            xyz = np.array(binary_point_line_properties[1:4])
+            rgb = np.array(binary_point_line_properties[4:7])
+            error = np.array(binary_point_line_properties[7])
+            track_length = read_next_bytes(
+                fid, num_bytes=8, format_char_sequence="Q")[0]
+            track_elems = read_next_bytes(
+                fid, num_bytes=8*track_length,
+                format_char_sequence="ii"*track_length)
+            image_ids = np.array(tuple(map(int, track_elems[0::2])))
+            point2D_idxs = np.array(tuple(map(int, track_elems[1::2])))
+            points3D[point3D_id] = Point3D(
+                id=point3D_id, xyz=xyz, rgb=rgb,
+                error=error, image_ids=image_ids,
+                point2D_idxs=point2D_idxs)
+    return points3D
+
+def get_points3D_xyz(points3D):
+    xyzs = np.empty([0,3])
+    for key, value in points3D.items():
+        xyz = value.xyz.reshape([1,3])
+        xyzs = np.r_[xyzs, xyz]
+    return xyzs
+
 def get_points3D(id): #this is assumed to be used for the new model (localised)
-    points3D = read_points3d_binary_id("/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/new_model/points3D.bin", id)
+    points3D = read_points3d_binary("/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/new_model/points3D.bin")
     return points3D
 
 
