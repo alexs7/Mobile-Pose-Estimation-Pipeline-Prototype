@@ -106,3 +106,21 @@ def get_query_image_id_new_model(name):
             image = v
     id = image.id
     return id
+
+def get_image_camera_center_by_name(name, images):
+    cam_center = np.array([])
+    for k,v in images.items():
+        if(v.name == name):
+            pose_r = v.qvec2rotmat()
+            pose_t = v.tvec
+            pose = np.c_[pose_r, pose_t]
+            pose = np.r_[pose, [np.array([0, 0, 0, 1])]]
+            rot = np.array(pose[0:3, 0:3])
+            cam_center = -rot.transpose().dot(pose_t)
+    return cam_center
+
+def get_images_names(all_images):
+    image_names = []
+    for k,v in all_images.items():
+        image_names.append(v.name)
+    return image_names
