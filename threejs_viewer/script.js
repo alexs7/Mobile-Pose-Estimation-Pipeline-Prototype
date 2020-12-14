@@ -222,8 +222,10 @@ window.onload = function() {
 
     app.post('/localise', (req, res) => {
 
+        server.close();
         var query_location = "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/"+req.body.frameName;
         var frameName = req.body.frameName
+        var pose = req.body.cameraDisplayOrientedPose
 
         fs.writeFileSync(
             query_location,
@@ -231,7 +233,7 @@ window.onload = function() {
             console.log(err);
             });
 
-        execSync("sips -r 90 /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/current_query_image/"+frameName);
+        //execSync("sips -r 90 /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/current_query_image/"+frameName);
 
         fs.writeFileSync(
             "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/query_name.txt",
@@ -242,7 +244,7 @@ window.onload = function() {
 
         fs.writeFileSync(
             "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_data/cameraPose.txt",
-            req.body.cameraPose, function(err) {
+            pose, function(err) {
             console.log(err);
         });
 
@@ -252,7 +254,7 @@ window.onload = function() {
         read3Dpoints();
         renderer.render( scene, camera );
 
-        debugger
+        debugger;
 
         var colmapPoints = loadPoints3DFromFile();
         res.status(200).json({ points: colmapPoints });

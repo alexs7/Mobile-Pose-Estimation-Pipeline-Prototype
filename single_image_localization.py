@@ -24,7 +24,7 @@ descs_avg_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colma
 
 db = COLMAPDatabase.connect(db_path)
 points3D = read_points3d_default(points3D_path)
-points3D_xyz = get_points3D_xyz(points3D)
+points3D_xyz = get_points3D_xyz(points3D) #new model maybe ?
 
 total_elapsed_time = 0
 # Step 1: Feature Extractor
@@ -38,7 +38,7 @@ print("Feature Extractor took: " + str(elapsed_time))
 # Step 2: Feature Matching
 start = time.time()
 train_descriptors = np.load(descs_avg_path).astype(np.float32)
-matches = feature_matcher_wrapper(db, query_frame_name, train_descriptors, points3D_xyz, 0.7)
+matches = feature_matcher_wrapper(db, query_frame_name, train_descriptors, points3D_xyz, 0.6)
 end = time.time()
 elapsed_time = end - start
 total_elapsed_time += elapsed_time
@@ -55,7 +55,7 @@ print("Solver took: " + str(elapsed_time))
 # Step 4: Apply transformation to points
 start = time.time()
 arcore_pose = get_ARCore_pose_query_image()
-scale = 0.09875740983606406
+scale = 0.06324694325085609
 points3D_xyz = add_ones(points3D_xyz) # homogeneous
 points3DARCore = apply_transform(colmap_pose, arcore_pose, scale, points3D_xyz)
 end = time.time()
