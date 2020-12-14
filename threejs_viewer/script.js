@@ -369,7 +369,7 @@ window.onload = function() {
 
 function get3DPoints(){
     console.log("Getting 3D points from COLMAP");
-    execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 create_3D_points_for_ARCore_debug.py');
+    execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 create_3D_points_for_ARCore_debug.py 0.06874668536696432');
 }
 
 function read3Dpoints(){
