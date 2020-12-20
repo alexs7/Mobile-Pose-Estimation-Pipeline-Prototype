@@ -222,7 +222,6 @@ window.onload = function() {
 
     app.post('/localise', (req, res) => {
 
-        server.close();
         var query_location = "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/"+req.body.frameName;
         var frameName = req.body.frameName
         var pose = req.body.cameraDisplayOrientedPose
@@ -254,9 +253,9 @@ window.onload = function() {
         read3Dpoints();
         renderer.render( scene, camera );
 
-        debugger;
 
-        var colmapPoints = loadPoints3DFromFile();
+        var colmapPoints = return3Dpoints();
+
         res.status(200).json({ points: colmapPoints });
 
         // var pose = localise(camera_pose, cameraPoseStringMatrix);
@@ -450,6 +449,40 @@ function read3Dpoints(){
 
     colmap_points.rotation.z = Math.PI/2;
     scene.add(colmap_points);
+}
+
+function return3Dpoints(){ //same as read3Dpoints but returns them
+
+    const file_path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/points3D_AR.txt';
+
+    var data = fs.readFileSync(file_path);
+    data = data.toString().split('\n');
+
+    var geometry = new THREE.Geometry();
+
+    for (var i = 0; i < data.length; i++) {
+        xyz = data[i].split(' ');
+        x = parseFloat(xyz[0]);
+        y = parseFloat(xyz[1]);
+        z = parseFloat(xyz[2]);
+        geometry.vertices.push(
+            new THREE.Vector3(x, y, z)
+        )
+    }
+
+    var material =  new THREE.PointsMaterial( { color: red, size: 0.01 } );
+    var local_points = new THREE.Points( geometry, material );
+
+    local_points.rotation.z = Math.PI/2;
+
+    var points_array = []
+    for (var i = 0; i < local_points.geometry.vertices.length; i++) {
+        points_array.push(local_points.geometry.vertices[i].x);
+        points_array.push(local_points.geometry.vertices[i].y);
+        points_array.push(local_points.geometry.vertices[i].z);
+        points_array.push(1);
+    }
+    return points_array
 }
 
 function getModel(){

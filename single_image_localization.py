@@ -14,7 +14,7 @@ from pose_solver_single_image import solve, apply_transform
 def add_ones(x):
     return np.hstack((x,np.ones((x.shape[0], 1))))
 
-K = np.loadtxt("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/matrices/pixel_intrinsics_low_640_portrait.txt")
+K = np.loadtxt("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/matrices/pixel_intrinsics_low_640_landscape.txt")
 query_frame_name = sys.argv[1] # same name as in query_name.txt but just the filename
 db_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/bedroom/database.db"
 points3D_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/bedroom/model/0/points3D.bin"
@@ -38,7 +38,7 @@ print("Feature Extractor took: " + str(elapsed_time))
 # Step 2: Feature Matching
 start = time.time()
 train_descriptors = np.load(descs_avg_path).astype(np.float32)
-matches = feature_matcher_wrapper(db, query_frame_name, train_descriptors, points3D_xyz, 0.6)
+matches = feature_matcher_wrapper(db, query_frame_name, train_descriptors, points3D_xyz, 0.65)
 end = time.time()
 elapsed_time = end - start
 total_elapsed_time += elapsed_time

@@ -24,7 +24,7 @@ def apply_transform(colmap_pose, arcore_pose, scale, points3D):
     # from_colmap_camera_to_arcore_camera
     points3D = intermediate_matrix.dot(points3D)
     # from_arcore_camera_to_arcore_world
-    points3D = rotZ.dot(arcore_pose.dot(points3D))
+    points3D = (arcore_pose.dot(points3D))
     points3D = np.transpose(points3D)
 
     return points3D
