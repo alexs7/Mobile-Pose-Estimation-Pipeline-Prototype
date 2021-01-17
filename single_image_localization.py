@@ -55,7 +55,7 @@ print("Solver took: " + str(elapsed_time))
 # Step 4: Apply transformation to points
 start = time.time()
 arcore_pose = get_ARCore_pose_query_image()
-scale = 0.06324694325085609
+scale = 0.06324694325085609 #get_scale.py
 points3D_xyz = add_ones(points3D_xyz) # homogeneous
 points3DARCore = apply_transform(colmap_pose, arcore_pose, scale, points3D_xyz)
 end = time.time()
