@@ -35,8 +35,32 @@ var debugAnchor;
 var arCoreViewMatrix;
 var arCoreProjMatrix;
 var cameraPoseStringMatrix;
+var pointsSize = 0.1;
+var valued_points_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/alfa_mega/points3D_sorted_descending_heatmap_per_image.txt";
 
 window.onload = function() {
+
+    var handle = $( "#custom-handle" );
+    $( "#slider" ).slider({
+        min: 1,
+        max: 100,
+        value: 100,
+        create: function() {
+            handle.text( $( this ).slider( "value" ) + "%");
+        },
+        slide: function( event, ui ) {
+            percentage = ui.value
+            handle.text( ui.value + "%");
+            renderModelPath(valued_points_path, red, percentage);
+        }});
+
+    $(".load_sorted_points").click(function(){
+        renderModelPath(valued_points_path, red);
+    });
+
+    $(".load_sorted_points_fixed_number").click(function(){
+        renderModelFixedNumberPath(valued_points_path, red, 1000);
+    });
 
     $(".useCameraDisplayOrientedPose").click(function(){
         useCameraDisplayOrientedPose = true;
@@ -577,4 +601,56 @@ function exportARCorePointCloud() {
 function debug_COLMAP_points(scale){
     execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 create_3D_points_for_ARCore_debug.py ' + scale);
     read3Dpoints();
+}
+
+function clearScene(){
+    while(scene.children.length > 0){
+        scene.remove(scene.children[0]);
+    }
+}
+
+function renderModelFixedNumberPath(file_path, colour, limit){
+    clearScene()
+    var data = fs.readFileSync(file_path);
+    data = data.toString().split('\n');
+
+    var geometry = new THREE.Geometry();
+
+    for (var i = 0; i < limit; i++) {
+        var line = data[i].split(' ');
+        var x = parseFloat(line[0]);
+        var y = parseFloat(line[1]);
+        var z = parseFloat(line[2]);
+        geometry.vertices.push(
+            new THREE.Vector3(x, y, z)
+        );
+    }
+
+    var material =  new THREE.PointsMaterial( { color: colour, size: pointsSize } );
+    var points = new THREE.Points( geometry, material );
+    scene.add(points);
+}
+
+function renderModelPath(file_path, colour, percentage=100) {
+    clearScene()
+    var data = fs.readFileSync(file_path);
+    data = data.toString().split('\n');
+
+    var geometry = new THREE.Geometry();
+
+    len = Math.round(data.length * percentage / 100) - 1 //remove that last new line
+
+    for (var i = 0; i < len; i++) {
+        var line = data[i].split(' ');
+        var x = parseFloat(line[0]);
+        var y = parseFloat(line[1]);
+        var z = parseFloat(line[2]);
+        geometry.vertices.push(
+            new THREE.Vector3(x, y, z)
+        );
+    }
+
+    var material =  new THREE.PointsMaterial( { color: colour, size: pointsSize } );
+    var points = new THREE.Points( geometry, material );
+    scene.add(points);
 }
