@@ -5,7 +5,7 @@ from tensorflow_core.python.keras import Sequential
 from tensorflow_core.python.keras.layers import Dense
 from tensorflow_core.python.keras.wrappers.scikit_learn import KerasRegressor
 
-dataset = np.loadtxt("/home/alex/fullpipeline/colmap_data/alfa_mega/slice1/points3D_sorted_descending_heatmap_per_image.txt")
+dataset = np.loadtxt("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/alfa_mega/points3D_sorted_descending_heatmap_per_image.txt")
 
 X = dataset[:,4:132] #sift vectors
 Y = dataset[:,3] #score
@@ -21,8 +21,9 @@ model.compile(loss='mean_squared_error', optimizer='adam')
 
 # train
 print("Training..")
-model.fit(X, Y, epochs=50)
+model.fit(X, Y, epochs=1500)
 
+print("Loading Model..")
 breakpoint()
 
 # evaluation
