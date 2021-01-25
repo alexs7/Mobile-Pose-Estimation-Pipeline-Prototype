@@ -21,12 +21,16 @@
 <canvas id="drawingSurface"></canvas>
 
 <div class="image_preview">
-  <img src="640x480.jpg" class="frame">
+  <img src="480x640.png" class="frame">
 </div>
 
 <div class="colmap_result_image_preview">
-  <img src="640x480.jpg" class="colmap_result_frame">
+  <img src="480x640.png" class="colmap_result_frame">
 </div>
+
+<!--<div class="ml_model_debug_wrapper">-->
+<!--  <img src="480x640.png" class="ml_model_debug_frame">-->
+<!--</div>-->
 
 <div class="controls">
   <button class="load_sorted_points btn btn-primary">Load Sorted (Valued) Points</button>
@@ -40,7 +44,7 @@
   <button class="viewARCoreCame btn btn-primary">View From ARCore Camera (NOT WORKING)</button>
   <button class="resetCamera btn btn-primary">Reset World Camera</button>
   <button class="loadCOLMAPpoints btn btn-primary">Load 3D Points</button>
-  <button class="exportPoints btn btn-primary">Export 3D Points for Alignment</button>
+  <button class="debugMLModel btn btn-primary">Debug ML (Sample Image)</button>
   <br>
   <label>Size</label>
   <div class="slider_size"></div>

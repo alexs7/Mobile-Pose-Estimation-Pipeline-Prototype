@@ -28,8 +28,8 @@ html, body {
 }
 
 .image_preview > img {
-    width: 320px;
-    height: 240px;
+    width: 240px;
+    height: 320px;
 }
 
 .colmap_result_image_preview {
@@ -39,10 +39,20 @@ html, body {
 }
 
 .colmap_result_image_preview > img {
-    width: 320px;
-    height: 240px;
+    width: 240px;
+    height: 320px;
 }
 
+.ml_model_debug_wrapper {
+    top: 40%;
+    right: 1%;
+    position: absolute;
+}
+
+.ml_model_debug_wrapper > img {
+    width: 480px;
+    height: 640px;
+}
 
 .controls{
     width : 20%;

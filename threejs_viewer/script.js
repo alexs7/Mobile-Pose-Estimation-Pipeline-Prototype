@@ -2,7 +2,7 @@ const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const { execSync } = require('child_process');
-const {getCurrentWindow, globalShortcut} = require('electron').remote;
+const {getCurrentWindow, globalShortcut, dialog} = require('electron').remote;
 
 //3D Objects
 var phone_cam;
@@ -36,7 +36,7 @@ var arCoreViewMatrix;
 var arCoreProjMatrix;
 var cameraPoseStringMatrix;
 var pointsSize = 0.1;
-var valued_points_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/alfa_mega/points3D_sorted_descending_heatmap_per_image.txt";
+var valued_points_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/coop_local/points3D_sorted_descending_heatmap_per_image.txt";
 
 window.onload = function() {
 
@@ -77,8 +77,9 @@ window.onload = function() {
         controls.update();
     });
 
-    $(".exportPoints").click(function(){
-        exportARCorePointCloud();
+    $(".debugMLModel").click(function(){
+        var image_path = dialog.showOpenDialogSync({ properties: ['openFile'] })
+        $(".ml_model_debug_frame").attr('src', image_path[0]);
     });
 
     $(".loadCOLMAPpoints").click(function(){
