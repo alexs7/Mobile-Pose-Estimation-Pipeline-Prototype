@@ -1,11 +1,13 @@
+from random import random, randint, randrange, sample
+
 import cv2
 import numpy as np
 from point3D_loader import read_points3d_default
 
 # K = np.loadtxt("matrices/pixel_intrinsics_low_640.txt")
 
-live_model_points3D_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/new_model/points3D.bin"
-points3D = read_points3d_default(live_model_points3D_path)
+# live_model_points3D_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/new_model/points3D.bin"
+# points3D = read_points3d_default(live_model_points3D_path)
 
 def show_projected_points(image_path, sorted_matches, sample, output):
     np.save("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/sorted_matches.npy", sorted_matches)
@@ -35,4 +37,12 @@ def show_projected_points(image_path, sorted_matches, sample, output):
         cv2.circle(image, center, 5, red, -1)
     cv2.imwrite("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/"+output, image)
 
-
+def print_points_on_image(image_path, points, color, output_path):
+    image = cv2.imread(image_path)
+    random_list = sample(range(0, 2600), 100)
+    for i in random_list:
+        x = int(points[i][0])
+        y = int(points[i][1])
+        center = (x, y)
+        cv2.circle(image, center, 3, color, -1)
+    cv2.imwrite(output_path, image)

@@ -247,6 +247,7 @@ window.onload = function() {
 
     app.post('/localise', (req, res) => {
 
+        console.log("Localising!");
         var query_location = "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/"+req.body.frameName;
         var frameName = req.body.frameName
         var pose = req.body.cameraDisplayOrientedPose
@@ -272,15 +273,16 @@ window.onload = function() {
             console.log(err);
         });
 
+        console.log("python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName)
         execSync("python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName,
             { cwd: '/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/' });
 
         read3Dpoints();
         renderer.render( scene, camera );
 
-
         var colmapPoints = return3Dpoints();
 
+        console.log("Sending Data back...")
         res.status(200).json({ points: colmapPoints });
 
         // var pose = localise(camera_pose, cameraPoseStringMatrix);
