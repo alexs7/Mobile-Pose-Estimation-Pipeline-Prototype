@@ -157,6 +157,37 @@ def image_localised(name, images):
             return image_id
     return image_id
 
+# This was copied from feature_matcher_single_image.py
+def get_queryDescriptors(db, image_id):
+    query_image_descriptors_data = db.execute("SELECT data FROM descriptors WHERE image_id = " + "'" + image_id + "'")
+    query_image_descriptors_data = query_image_descriptors_data.fetchone()[0]
+    query_image_descriptors_data = db.blob_to_array(query_image_descriptors_data, np.uint8)
+    descs_rows = int(np.shape(query_image_descriptors_data)[0] / 128)
+    query_image_descriptors_data = query_image_descriptors_data.reshape([descs_rows, 128])
+
+    row_sums = query_image_descriptors_data.sum(axis=1)
+    query_image_descriptors_data = query_image_descriptors_data / row_sums[:, np.newaxis]
+    queryDescriptors = query_image_descriptors_data.astype(np.float32)
+    return queryDescriptors
+
+# This was copied from feature_matcher_single_image.py
+def get_image_id(db, query_image):
+    image_id = db.execute("SELECT image_id FROM images WHERE name = " + "'" + query_image + "'")
+    image_id = str(image_id.fetchone()[0])
+    return image_id
+
+# This was copied from feature_matcher_single_image.py
+def get_keypoints_xy(db, image_id):
+    query_image_keypoints_data = db.execute("SELECT data FROM keypoints WHERE image_id = " + "'" + image_id + "'")
+    query_image_keypoints_data = query_image_keypoints_data.fetchone()[0]
+    query_image_keypoints_data_cols = db.execute("SELECT cols FROM keypoints WHERE image_id = " + "'" + image_id + "'")
+    query_image_keypoints_data_cols = int(query_image_keypoints_data_cols.fetchone()[0])
+    query_image_keypoints_data = db.blob_to_array(query_image_keypoints_data, np.float32)
+    query_image_keypoints_data_rows = int(np.shape(query_image_keypoints_data)[0] / query_image_keypoints_data_cols)
+    query_image_keypoints_data = query_image_keypoints_data.reshape(query_image_keypoints_data_rows, query_image_keypoints_data_cols)
+    query_image_keypoints_data_xy = query_image_keypoints_data[:, 0:2]
+    return query_image_keypoints_data_xy
+
 """
 The reconstructed pose of an image is specified as the projection 
 from world to the camera coordinate system of an image using a quaternion (QW, QX, QY, QZ) 
