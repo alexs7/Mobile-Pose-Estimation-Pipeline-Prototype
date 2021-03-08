@@ -36,7 +36,8 @@ var arCoreViewMatrix;
 var arCoreProjMatrix;
 var cameraPoseStringMatrix;
 var pointsSize = 0.1;
-var valued_points_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/coop_local/points3D_sorted_descending_heatmap_per_image.txt";
+var valued_points_preds_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/coop_local/ML_data/results/points3D_sorted_by_pred_score.txt"
+var valued_points_scores_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/coop_local/ML_data/results/points3D_sorted_by_score.txt"
 
 window.onload = function() {
 
@@ -51,15 +52,15 @@ window.onload = function() {
         slide: function( event, ui ) {
             percentage = ui.value
             handle.text( ui.value + "%");
-            renderModelPath(valued_points_path, red, percentage);
+            renderModelPath(valued_points_scores_path, red, percentage);
         }});
 
     $(".load_sorted_points").click(function(){
-        renderModelPath(valued_points_path, red);
+        renderModelPath(valued_points_scores_path, red);
     });
 
     $(".load_sorted_points_fixed_number").click(function(){
-        renderModelFixedNumberPath(valued_points_path, red, 1000);
+        renderModelFixedNumberPath(valued_points_scores_path, red, 1000);
     });
 
     $(".useCameraDisplayOrientedPose").click(function(){
