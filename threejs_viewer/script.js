@@ -641,7 +641,7 @@ function renderModelPath(data, colour, percentage=100, comparison_data = null) {
                 new THREE.Vector3(x, y, z)
             );
         }
-        var comparison_material =  new THREE.PointsMaterial( { color: blue, size: pointsSize } );
+        var comparison_material =  new THREE.PointsMaterial( { color: green, size: pointsSize } );
         var comparison_points = new THREE.Points( comparison_geometry, comparison_material );
         comparison_points.rotateX(Math.PI);
         comparison_points.translateX(26); //so they are side by side
