@@ -35,9 +35,11 @@ var debugAnchor;
 var arCoreViewMatrix;
 var arCoreProjMatrix;
 var cameraPoseStringMatrix;
-var pointsSize = 0.1;
+var pointsSize = 0.2;
 var valued_points_preds_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/coop_local/ML_data/results/points3D_sorted_by_pred_score.txt"
 var valued_points_scores_path = "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/all_data_and_models/coop_local/ML_data/results/points3D_sorted_by_score.txt"
+var points_from_file = loadPoints3DFromFile(valued_points_preds_path);
+var points_from_file_shuffled = loadPoints3DFromFile(valued_points_preds_path, true);
 
 window.onload = function() {
 
@@ -52,15 +54,11 @@ window.onload = function() {
         slide: function( event, ui ) {
             percentage = ui.value
             handle.text( ui.value + "%");
-            renderModelPath(valued_points_scores_path, red, percentage);
+            renderModelPath(points_from_file, red, percentage, points_from_file_shuffled);
         }});
 
     $(".load_sorted_points").click(function(){
-        renderModelPath(valued_points_scores_path, red);
-    });
-
-    $(".load_sorted_points_fixed_number").click(function(){
-        renderModelFixedNumberPath(valued_points_scores_path, red, 1000);
+        renderModelPath(points_from_file, red);
     });
 
     $(".useCameraDisplayOrientedPose").click(function(){
@@ -271,7 +269,8 @@ window.onload = function() {
 
     app.post('/getModel', (req, res) => {
         // var colmapPoints = getModel();
-        var colmapPoints = loadPoints3DFromFile();
+        var path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/points3D_AR.txt';
+        var colmapPoints = loadPoints3DFromFile(path);
         res.status(200).json({ points: colmapPoints });
     });
 
@@ -496,11 +495,18 @@ function getModel(){
     return data;
 }
 
-function loadPoints3DFromFile(){
-    const file_path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/points3D_AR.txt';
-
-    var data = fs.readFileSync(file_path);
+function loadPoints3DFromFile(path, shuffle_arr = false){
+    var data = fs.readFileSync(path);
     data = data.toString().split('\n');
+
+    if(shuffle_arr == true){
+        for(let i = (data.length - 1); i > 0; i--){
+            const j = Math.floor(Math.random() * i)
+            const temp = data[i]
+            data[i] = data[j]
+            data[j] = temp
+        }
+    }
 
     return data;
 }
@@ -587,10 +593,8 @@ function clearScene(){
     }
 }
 
-function renderModelFixedNumberPath(file_path, colour, limit){
+function renderModelFixedNumberPath(data, colour, limit){
     clearScene()
-    var data = fs.readFileSync(file_path);
-    data = data.toString().split('\n');
 
     var geometry = new THREE.Geometry();
 
@@ -609,10 +613,8 @@ function renderModelFixedNumberPath(file_path, colour, limit){
     scene.add(points);
 }
 
-function renderModelPath(file_path, colour, percentage=100) {
+function renderModelPath(data, colour, percentage=100, comparison_data = null) {
     clearScene()
-    var data = fs.readFileSync(file_path);
-    data = data.toString().split('\n');
 
     var geometry = new THREE.Geometry();
 
@@ -628,7 +630,26 @@ function renderModelPath(file_path, colour, percentage=100) {
         );
     }
 
+    if(comparison_data != null){
+        var comparison_geometry = new THREE.Geometry();
+        for (var i = 0; i < len; i++) {
+            var line = comparison_data[i].split(' ');
+            var x = parseFloat(line[0]);
+            var y = parseFloat(line[1]);
+            var z = parseFloat(line[2]);
+            comparison_geometry.vertices.push(
+                new THREE.Vector3(x, y, z)
+            );
+        }
+        var comparison_material =  new THREE.PointsMaterial( { color: blue, size: pointsSize } );
+        var comparison_points = new THREE.Points( comparison_geometry, comparison_material );
+        comparison_points.rotateX(Math.PI);
+        comparison_points.translateX(26); //so they are side by side
+        scene.add(comparison_points);
+    }
+
     var material =  new THREE.PointsMaterial( { color: colour, size: pointsSize } );
     var points = new THREE.Points( geometry, material );
+    points.rotateX(Math.PI);
     scene.add(points);
 }
