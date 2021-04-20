@@ -1,6 +1,7 @@
 # Remember to get the points average for the model first,
 #  1) get_points_3D_mean_desc_single_model.py
 #  2) and the scale python3 get_scale.py
+#  3) images localised will be in landscape (as it comes from the phone. TODO: rotate!)
 
 # Sample output (with times and a model of 25k points)
 # Setting up..
