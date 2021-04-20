@@ -18,6 +18,6 @@ register_image(db_path,
                query_images_list_file,
                current_model,
                output_model,
-               queryParam=True)
+               queryExtraction=True)
 
 
