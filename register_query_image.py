@@ -7,7 +7,7 @@ query_images_list_file = sys.argv[3] #"colmap_data/data/query_name.txt"
 current_model = sys.argv[4] #"colmap_data/data/model/0"
 output_model = sys.argv[5] #"colmap_data/data/new_model"
 
-# the database here that has to be used is the on from the sfm.
+# the database here that has to be used is the one from the sfm.
 # you could another db (an empty) but it makes no sense - no time to investigate
 # for ML purposes run this command
 
