@@ -1,3 +1,5 @@
+import os
+
 import colmap
 from arrange_sessions import gen_query_txt, gen_base_cam_centers_txt
 import subprocess
@@ -8,22 +10,19 @@ import numpy as np
 
 # In order for this to work you have to transfer the images manually into the correct folders first
 # Remember to undistort images first
-path = sys.argv[1] # i.e /home/alex/fullpipeline/colmap_data/CMU_data/slice4/
-slice = path.split('/')[-2].split("_")[0] # for slice4_4, slice4_5 etc etc
-arcore = sys.argv[2] == '1'
+path = sys.argv[1] # i.e /home/alex/CYENS/Data/models/
 
 #base mode paths
-base_db_path = path+"base/database.db"
-base_images_dir = path+"base/images"
-base_model_dir = path+"base/model"
-reference_model_images_path = "/home/alex/Datasets/Extended-CMU-Seasons/Extended-CMU-Seasons/"+slice+"/ground-truth-database-images-"+slice+".txt"
-alignment_reference_cam_centers_txt = path+"base/base_images_cam_centers.txt"
+base_db_path = os.path.join(path,"database.db")
+base_images_dir = os.path.join(path,"images")
+base_model_dir = os.path.join(path,"model")
 
-base_images_no = len(glob.glob1(base_images_dir,"*.jpg"))
-
-colmap.feature_extractor(base_db_path, base_images_dir)
-colmap.vocab_tree_matcher(base_db_path)
+# colmap.feature_extractor(base_db_path, base_images_dir)
+# colmap.vocab_tree_matcher(base_db_path)
 colmap.mapper(base_db_path, base_images_dir, base_model_dir)
+
+exit()
+# previous code here not needed
 
 if(arcore):
     scale = calc_scale_COLMAP_ARCORE("/home/alex/Mobile-Pose-Estimation-Pipeline-Prototype/colmap_data/local_datasets/Coop/reference_data/base_reference_data/", base_model_dir+"/0/images.bin")
