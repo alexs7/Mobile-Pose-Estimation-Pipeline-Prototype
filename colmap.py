@@ -37,7 +37,7 @@ def save_ini(contents, ini_save_path):
 def feature_extractor(database_path, image_path, image_list_path=None, ini_save_path=None, params=None, query=False):
 
     # Find and read template INI.
-    input_ini_file = os.path.join('template_inis', 'colmap_feature_extraction.ini')
+    input_ini_file = os.path.join('template_inis', 'colmap_feature_extraction_query.ini')
 
     with open(input_ini_file, 'r') as f:
         colmap_ini = f.read()

@@ -17,8 +17,8 @@ base_db_path = os.path.join(path,"database.db")
 base_images_dir = os.path.join(path,"images")
 base_model_dir = os.path.join(path,"model")
 
-# colmap.feature_extractor(base_db_path, base_images_dir)
-# colmap.vocab_tree_matcher(base_db_path)
+colmap.feature_extractor(base_db_path, base_images_dir)
+colmap.vocab_tree_matcher(base_db_path)
 colmap.mapper(base_db_path, base_images_dir, base_model_dir)
 
 exit()
