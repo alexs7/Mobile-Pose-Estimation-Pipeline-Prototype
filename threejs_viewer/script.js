@@ -222,8 +222,10 @@ window.onload = function() {
 
     app.post('/localise', (req, res) => {
 
-        var query_location = "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/"+req.body.frameName;
+        console.log("Localised Action Hit");
         var frameName = req.body.frameName
+        console.log(frameName);
+        var query_location = "/Users/alex/Projects/CYENS/ar_core_electron_query_images/"+frameName;
         var pose = req.body.cameraDisplayOrientedPose
 
         fs.writeFileSync(
@@ -232,39 +234,33 @@ window.onload = function() {
             console.log(err);
             });
 
-        //execSync("sips -r 90 /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/current_query_image/"+frameName);
+        //execSync("sips -r 90 /Users/alex/Projects/CYENS/ar_core_electron_query_images/"+frameName);
 
         fs.writeFileSync(
-            "/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/query_name.txt",
+            "/Users/alex/Projects/CYENS/ar_core_electron_query_images/query_name.txt",
             frameName,
             function (err) {
                 if (err) return console.log(err);
             });
 
         fs.writeFileSync(
-            "/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_data/cameraPose.txt",
+            "/Users/alex/Projects/CYENS/ar_core_electron_query_images/cameraPose.txt",
             pose, function(err) {
             console.log(err);
         });
 
-        execSync("python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName,
+        console.log("Localizing..")
+        execSync("source venv/bin/activate && python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName,
             { cwd: '/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/' });
 
+        console.log("Loading 3D points..")
         read3Dpoints();
         renderer.render( scene, camera );
-
 
         var colmapPoints = return3Dpoints();
 
         res.status(200).json({ points: colmapPoints });
 
-        // var pose = localise(camera_pose, cameraPoseStringMatrix);
-        // //draw points
-        // debug_COLMAP_points(0.071);
-        // exportARCorePointCloud();
-        //
-        // pose = pose.split(", ");
-        // res.status(200).json({ server_pose: pose, arcore_pose: camera_pose });
     });
 
     app.post('/getModel', (req, res) => {
@@ -427,7 +423,7 @@ function read3Dpoints(){
 
     scene.remove(colmap_points); // remove previous ones
 
-    const file_path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/points3D_AR.txt';
+    const file_path = '/Users/alex/Projects/CYENS/colmap_models/points3D_AR.txt';
 
     var data = fs.readFileSync(file_path);
     data = data.toString().split('\n');
@@ -442,46 +438,55 @@ function read3Dpoints(){
         geometry.vertices.push(
             new THREE.Vector3(x, y, z)
         )
+        r = parseFloat(xyz[4]);
+        g = parseFloat(xyz[5]);
+        b = parseFloat(xyz[6]);
+        geometry.colors.push(
+            new THREE.Color("rgb("+r+", "+g+", "+b+")")
+        )
     }
 
-    var material =  new THREE.PointsMaterial( { color: red, size: 0.01 } );
+    var material =  new THREE.PointsMaterial( { vertexColors: THREE.VertexColors, size: 0.1 } );
     colmap_points = new THREE.Points( geometry, material );
 
-    colmap_points.rotation.z = Math.PI/2;
+    //colmap_points.rotation.z = Math.PI/2;
     scene.add(colmap_points);
 }
 
 function return3Dpoints(){ //same as read3Dpoints but returns them
 
-    const file_path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/points3D_AR.txt';
+    const file_path = '/Users/alex/Projects/CYENS/colmap_models/points3D_AR.txt';
 
     var data = fs.readFileSync(file_path);
     data = data.toString().split('\n');
 
-    var geometry = new THREE.Geometry();
-
-    for (var i = 0; i < data.length; i++) {
-        xyz = data[i].split(' ');
-        x = parseFloat(xyz[0]);
-        y = parseFloat(xyz[1]);
-        z = parseFloat(xyz[2]);
-        geometry.vertices.push(
-            new THREE.Vector3(x, y, z)
-        )
-    }
-
-    var material =  new THREE.PointsMaterial( { color: red, size: 0.01 } );
-    var local_points = new THREE.Points( geometry, material );
-
-    local_points.rotation.z = Math.PI/2;
+    //local_points.rotation.z = Math.PI/2; // TODO: Do I need this ?
 
     var points_array = []
-    for (var i = 0; i < local_points.geometry.vertices.length; i++) {
-        points_array.push(local_points.geometry.vertices[i].x);
-        points_array.push(local_points.geometry.vertices[i].y);
-        points_array.push(local_points.geometry.vertices[i].z);
+    for (var i = 0; i < data.length; i+=1) {
+        if(data[i] == ""){
+            continue
+        }
+        xyz_rgb = data[i].split(' ');
+        x = parseFloat(xyz_rgb[0]);
+        y = parseFloat(xyz_rgb[1]);
+        z = parseFloat(xyz_rgb[2]);
+
+        points_array.push(x);
+        points_array.push(y);
+        points_array.push(z);
+
         points_array.push(1);
+
+        r = parseFloat(xyz_rgb[4] / 255);
+        g = parseFloat(xyz_rgb[5] / 255);
+        b = parseFloat(xyz_rgb[6] / 255);
+
+        points_array.push(r);
+        points_array.push(g);
+        points_array.push(b);
     }
+
     return points_array
 }
 
@@ -501,52 +506,6 @@ function loadPoints3DFromFile(){
     data = data.toString().split('\n');
 
     return data;
-}
-
-function localise(arg_pose, arg_pose_matrix){
-
-    var pose = arg_pose;
-    var pose_matrix_string = arg_pose_matrix;
-    //server.close();
-
-    var base64String = $('.frame').attr('src');
-    var base64Data = base64String.replace(/^data:image\/png;base64,/, "");
-
-    fs.writeFileSync("/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/current_query_image/query.jpg",
-        base64Data, 'base64', function(err) {
-            console.log(err);
-        });
-
-    fs.writeFileSync("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_data/cameraPose.txt",
-        pose.join(","), function(err) {
-            console.log(err);
-        });
-
-    fs.writeFileSync("/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_data/cameraPoseMatrixString.txt",
-        pose_matrix_string, function(err) {
-            console.log(err);
-        });
-
-    //rotate image so it matches the ones in COLMAP
-    // execSync('sips -r 90 /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/current_query_image/query.jpg')
-
-    //remove model and replace with vanilla
-    execSync('rm -rf /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/model/');
-    execSync('rm /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/database.db');
-    execSync('cp -r /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/vanilla_model/* /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/');
-
-    //remove old localised model
-    execSync('rm -rf /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/new_model/*');
-    execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 register_query_image.py');
-
-    console.log('Done localising!');
-
-    execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 debug_results.py');
-    $(".colmap_result_frame").attr('src', '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/colmap_points_projected.jpg');
-
-    var global_pose = execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 get_global_pose.py');
-
-    return global_pose.toString();
 }
 
 function exportMatrixString(matrix, name){

@@ -80,8 +80,8 @@ def get_ARCore_poses(dir, pose_string, sequence):
         poses.append(np.loadtxt(dir + "/" + pose_string+'_'+sequence[i]+'.txt'))
     return poses
 
-def get_ARCore_pose_query_image():
-    f = open('/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/query_data/cameraPose.txt', 'r')
+def get_ARCore_pose_query_image(path):
+    f = open(path, 'r')
     x = f.readlines()
     f.close()
     values = x[0].split(',')

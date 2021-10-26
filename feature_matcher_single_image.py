@@ -32,10 +32,7 @@ def get_image_id(db, query_image):
     image_id = str(image_id.fetchone()[0])
     return image_id
 
-def feature_matcher_wrapper(db, query_image, trainDescriptors, points3D_xyz, ratio_test_val, points_scores_array=None):
-    # create image_name <-> matches, dict - easier to work with
-    matches = {}
-
+def feature_matcher_wrapper(db, query_image, trainDescriptors, points3D_xyz_rgb, ratio_test_val, points_scores_array=None):
     image_id = get_image_id(db,query_image)
     # keypoints data
     keypoints_xy = get_keypoints_xy(db, image_id)
@@ -47,28 +44,28 @@ def feature_matcher_wrapper(db, query_image, trainDescriptors, points3D_xyz, rat
 
     # output: idx1, idx2, lowes_distance (vectors of corresponding indexes in
     # m the closest, n is the second closest
-    good_matches = np.empty([0, 5])
+    good_matches = np.empty([0, 9])
     for m, n in temp_matches: # TODO: maybe consider what you have at this point? and add it to the if condition ?
         assert(m.distance <= n.distance)
         # trainIdx is from 0 to no of points 3D (since each point 3D has a desc), so you can use it as an index here
         if (m.distance < ratio_test_val * n.distance): #and (score_m > score_n):
             if(m.queryIdx >= keypoints_xy.shape[0]): #keypoints_xy.shape[0] always same as queryDescriptors.shape[0]
                 raise Exception("m.queryIdx error!")
-            if (m.trainIdx >= points3D_xyz.shape[0]):
+            if (m.trainIdx >= points3D_xyz_rgb.shape[0]):
                 raise Exception("m.trainIdx error!")
             # idx1.append(m.queryIdx)
             # idx2.append(m.trainIdx)
             scores = []
             xy2D = keypoints_xy[m.queryIdx, :].tolist()
-            xyz3D = points3D_xyz[m.trainIdx, :].tolist()
+            xyz3D_rgb = points3D_xyz_rgb[m.trainIdx, :].tolist()
 
             if (points_scores_array is not None):
                 for points_scores in points_scores_array:
                     scores.append(points_scores[0, m.trainIdx])
                     scores.append(points_scores[0, n.trainIdx])
 
-            match_data = [xy2D, xyz3D]
+            match_data = [xy2D, xyz3D_rgb]
             match_data = list(chain(*match_data))
-            good_matches = np.r_[good_matches, np.reshape(match_data, [1,5])]
+            good_matches = np.r_[good_matches, np.reshape(match_data, [1,9])]
 
     return good_matches

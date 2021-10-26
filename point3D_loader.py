@@ -177,6 +177,16 @@ def get_points3D_xyz(points3D):
         xyzs = np.r_[xyzs, xyz]
     return xyzs
 
+def get_points3D_xyz_rgb(points3D):
+    xyzh_rgb = np.empty([0,7])
+    for key, value in points3D.items():
+        xyz = value.xyz.reshape([1,3])
+        xyzh = np.c_[xyz, 1]
+        rgb = value.rgb.reshape([1,3])
+        temp = np.c_[xyzh, rgb]
+        xyzh_rgb = np.r_[xyzh_rgb, temp]
+    return xyzh_rgb
+
 # create points id and index relationship
 # points3D_indexing[i] = id
 def index_dict(points3D):

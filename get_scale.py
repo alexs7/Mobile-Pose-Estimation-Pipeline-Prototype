@@ -2,6 +2,7 @@
 # manual work to set the directories
 import glob
 import sys
+import os
 
 import numpy as np
 import random
@@ -13,7 +14,7 @@ def calc_scale_COLMAP_ARCORE(arcore_devices_poses_path, colmap_model_images_path
     model_images_names = get_images_names(model_images)
     ar_core_cam_centers = {} #This in metric
 
-    for file in glob.glob(arcore_devices_poses_path+"displayOrientedPose_*.txt"):
+    for file in glob.glob(os.path.join(arcore_devices_poses_path,"displayOrientedPose_*.txt")):
         pose = np.loadtxt(file)
         cam_center = np.array(pose[0:3, 3]) # remember in ARCore the matrices' t component is the camera center in the world
         ar_core_cam_centers["frame_"+file.split("_")[-1].split(".")[0]+".jpg"] = cam_center
