@@ -4,6 +4,7 @@
 #                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/images.bin \
 #                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/points3D.bin \
 #                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/descriptors_avg/avg_descs.npy
+import os
 import sys
 
 import numpy as np
@@ -36,10 +37,11 @@ def get_desc_avg(points3D, db):
         points_mean_descs = np.r_[points_mean_descs, points3D_descs.mean(axis=0).reshape(1,128)]
     return points_mean_descs
 
-db_path = sys.argv[1]
-model_images_bin_path = sys.argv[2]
-model_points3D_bin_path = sys.argv[3]
-save_path = sys.argv[4]
+base_path = sys.argv[1]
+db_path = os.path.join(base_path,"database.db")
+model_images_bin_path = os.path.join(base_path,"model/0/images.bin")
+model_points3D_bin_path = os.path.join(base_path,"model/0/points3D.bin")
+save_path = os.path.join(base_path,"model/0/avg_descs.npy")
 
 db = COLMAPDatabase.connect(db_path)
 images = read_images_binary(model_images_bin_path)
@@ -47,5 +49,3 @@ points3D = read_points3d_default(model_points3D_bin_path)
 
 avgs = get_desc_avg(points3D, db)
 np.save(save_path, avgs)
-
-
