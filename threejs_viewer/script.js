@@ -183,7 +183,7 @@ window.onload = function() {
 
         scene.remove(arcore_points);
         var pointsGeometry = new THREE.Geometry();
-        var material =  new THREE.PointsMaterial( { color: green, size: 0.02 } );
+        var material =  new THREE.PointsMaterial( { color: blue, size: 0.02 } );
 
         for (var i = 0; i < pointsArray.length; i++) {
             x = parseFloat(pointsArray[i].split(" ")[0]);
@@ -258,8 +258,9 @@ window.onload = function() {
         renderer.render( scene, camera );
 
         var colmapPoints = return3Dpoints();
+        var finalPose = returnServerPose();
 
-        res.status(200).json({ points: colmapPoints });
+        res.status(200).json({ points: colmapPoints, serverPose: finalPose });
 
     });
 
@@ -488,6 +489,16 @@ function return3Dpoints(){ //same as read3Dpoints but returns them
     }
 
     return points_array
+}
+
+function returnServerPose(){
+
+    const file_path = '/Users/alex/Projects/CYENS/colmap_models/final_pose.txt';
+
+    var data = fs.readFileSync(file_path);
+    data = data.toString().split('\n');
+    data.pop()
+    return data
 }
 
 function getModel(){

@@ -62,9 +62,9 @@ print("Solver took: " + str(elapsed_time))
 print("AT")
 start = time.time()
 arcore_pose = get_ARCore_pose_query_image(ar_core_cam_pose)
-scale = 0.07081021250799535
+scale = 1.00256211932611
 # points3D_xyz = add_ones(points3D_xyz) # homogeneous
-points3DARCore = apply_transform(colmap_pose, arcore_pose, scale, points3D_xyz_rgb)
+points3DARCore, final_pose = apply_transform(colmap_pose, arcore_pose, scale, points3D_xyz_rgb)
 end = time.time()
 elapsed_time = end - start
 total_elapsed_time += elapsed_time
@@ -72,5 +72,6 @@ print("Apply transformations took: " + str(elapsed_time))
 
 print("Saving..")
 np.savetxt('/Users/alex/Projects/CYENS/colmap_models/points3D_AR.txt', points3DARCore)
+np.savetxt('/Users/alex/Projects/CYENS/colmap_models/final_pose.txt', final_pose)
 
 print("Total time: " + str(total_elapsed_time))
