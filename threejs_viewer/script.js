@@ -223,6 +223,7 @@ window.onload = function() {
     app.post('/localise', (req, res) => {
 
         console.log("Localised Action Hit");
+        // debugger;
         var frameName = req.body.frameName
         console.log(frameName);
         var query_location = "/Users/alex/Projects/CYENS/ar_core_electron_query_images/"+frameName;

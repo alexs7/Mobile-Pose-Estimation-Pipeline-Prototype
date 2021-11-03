@@ -62,7 +62,7 @@ print("Solver took: " + str(elapsed_time))
 print("AT")
 start = time.time()
 arcore_pose = get_ARCore_pose_query_image(ar_core_cam_pose)
-scale = 1.00256211932611
+scale = 6.490987024971043   #6.490987024971043 # cynes 5  # | 2.304230564133956 #cyens 4 | 1.00256211932611 #cyens 3
 # points3D_xyz = add_ones(points3D_xyz) # homogeneous
 points3DARCore, final_pose = apply_transform(colmap_pose, arcore_pose, scale, points3D_xyz_rgb)
 end = time.time()
