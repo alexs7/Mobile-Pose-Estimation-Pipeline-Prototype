@@ -104,6 +104,7 @@ window.onload = function() {
 
     app.post('/', (req, res) => {
 
+        debugger; // TODO: Continue from here - The code needs to handle undefined withouth breaking the other Android app
         $(".frame").attr('src', 'data:image/png;base64,'+req.body.frameString);
 
         if(useCameraDisplayOrientedPose) {
