@@ -104,25 +104,13 @@ window.onload = function() {
 
     app.post('/', (req, res) => {
 
-        debugger; // TODO: Continue from here - The code needs to handle undefined withouth breaking the other Android app
         $(".frame").attr('src', 'data:image/png;base64,'+req.body.frameString);
 
-        if(useCameraDisplayOrientedPose) {
-            camera_pose = req.body.cameraDisplayOrientedPose.split(',');
-            local_camera_axes_points = req.body.cameraDisplayOrientedPoseLocalAxes.split(",");
-            cameraWorldCenter = req.body.cameraDisplayOrientedPoseCamCenter.split(",");
-            debugAnchorPosition = req.body.debugAnchorPositionForDisplayOrientedPose.split(",");
-            cameraPoseStringMatrix = req.body.cameraDisplayOrientedPoseMatrix;
-        }else{
-            camera_pose = req.body.cameraPose.split(',');
-            local_camera_axes_points = req.body.cameraPoseLocalAxes.split(",");
-            cameraWorldCenter = req.body.cameraPoseCamCenter.split(",");
-            debugAnchorPosition = req.body.debugAnchorPositionForCameraPose.split(",");
-            cameraPoseStringMatrix = req.body.cameraPoseMatrix;
-        }
-
-        arCoreViewMatrix = req.body.viewmtx;
-        arCoreProjMatrix = req.body.projMatrix;
+        camera_pose = req.body.cameraPose.split(',');
+        var x_local_cam_axis = req.body.x_local_cam_axis.split(',');
+        var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
+        var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
+        //debugAnchorPosition = req.body.debugAnchorPositionForDisplayOrientedPose.split(",");
 
         var tx = parseFloat(camera_pose[0]);
         var ty = parseFloat(camera_pose[1]);
@@ -140,44 +128,22 @@ window.onload = function() {
         cameraWorldCenterPoint.position.y = ty;
         cameraWorldCenterPoint.position.z = tz;
 
-        debugAnchor.position.x = debugAnchorPosition[0];
-        debugAnchor.position.y = debugAnchorPosition[1];
-        debugAnchor.position.z = debugAnchorPosition[2];
-
         var quaternion = new THREE.Quaternion();
         quaternion.fromArray([qx, qy, qz, qw]);
         quaternion.normalize(); // ?
         phone_cam.setRotationFromQuaternion(quaternion);
 
-        var x = parseFloat(local_camera_axes_points[0]);
-        var y = parseFloat(local_camera_axes_points[1]);
-        var z = parseFloat(local_camera_axes_points[2]);
-        x_axis_point.position.x = x;
-        x_axis_point.position.y = y;
-        x_axis_point.position.z = z;
+        x_axis_point.position.x = parseFloat(x_local_cam_axis[0]);
+        x_axis_point.position.y = parseFloat(x_local_cam_axis[1]);
+        x_axis_point.position.z = parseFloat(x_local_cam_axis[2]);
 
-        x = parseFloat(local_camera_axes_points[3]);
-        y = parseFloat(local_camera_axes_points[4]);
-        z = parseFloat(local_camera_axes_points[5]);
-        y_axis_point.position.x = x;
-        y_axis_point.position.y = y;
-        y_axis_point.position.z = z;
+        y_axis_point.position.x = parseFloat(y_local_cam_axis[0]);
+        y_axis_point.position.y = parseFloat(y_local_cam_axis[1]);
+        y_axis_point.position.z = parseFloat(y_local_cam_axis[2]);
 
-        x = parseFloat(local_camera_axes_points[6]);
-        y = parseFloat(local_camera_axes_points[7]);
-        z = parseFloat(local_camera_axes_points[8]);
-        z_axis_point.position.x = x;
-        z_axis_point.position.y = y;
-        z_axis_point.position.z = z;
-
-        var anchorPosition = req.body.anchorPosition.split(',');
-        var anchor_tx = parseFloat(anchorPosition[0]);
-        var anchor_ty = parseFloat(anchorPosition[1]);
-        var anchor_tz = parseFloat(anchorPosition[2]);
-
-        anchor.position.x = anchor_tx;
-        anchor.position.y = anchor_ty;
-        anchor.position.z = anchor_tz;
+        z_axis_point.position.x = parseFloat(z_local_cam_axis[0]);
+        z_axis_point.position.y = parseFloat(z_local_cam_axis[1]);
+        z_axis_point.position.z = parseFloat(z_local_cam_axis[2]);
 
         var pointsArray = req.body.pointCloud.split("\n");
         pointsArray.pop(); // remove newline
@@ -197,26 +163,6 @@ window.onload = function() {
         }
         arcore_points = new THREE.Points( pointsGeometry, material );
         scene.add(arcore_points);
-
-
-        // var pointsArray = req.body.pointCloudByViewMatrix.split("\n");
-        // pointsArray.pop(); // remove newline
-        //
-        // scene.remove(arcore_points_view_matrix);
-        // var pointsGeometry = new THREE.Geometry();
-        // var material =  new THREE.PointsMaterial( { color: blue, size: 0.02 } );
-        //
-        // for (var i = 0; i < pointsArray.length; i++) {
-        //     x = parseFloat(pointsArray[i].split(" ")[0]);
-        //     y = parseFloat(pointsArray[i].split(" ")[1]);
-        //     z = parseFloat(pointsArray[i].split(" ")[2]);
-        //
-        //     pointsGeometry.vertices.push(
-        //         new THREE.Vector3(x, y, z)
-        //     )
-        // }
-        // arcore_points_view_matrix = new THREE.Points( pointsGeometry, material );
-        // scene.add(arcore_points_view_matrix);
 
         res.sendStatus(200);
     });
@@ -315,11 +261,11 @@ window.onload = function() {
     phone_cam.scale.set(0.1,0.1,0.1);
     scene.add( phone_cam );
 
-    var geometry = new THREE.SphereGeometry( 1, 32, 32 );
-    var material = new THREE.MeshPhongMaterial( {color: yellow} );
-    anchor = new THREE.Mesh( geometry, material );
-    scene.add( anchor );
-    anchor.scale.set(0.03,0.03,0.03);
+    // var geometry = new THREE.SphereGeometry( 1, 32, 32 );
+    // var material = new THREE.MeshPhongMaterial( {color: yellow} );
+    // anchor = new THREE.Mesh( geometry, material );
+    // scene.add( anchor );
+    // anchor.scale.set(0.03,0.03,0.03);
 
     var geometry = new THREE.SphereGeometry( 1, 32, 32 );
     var material = new THREE.MeshPhongMaterial( {color: white } );
@@ -348,11 +294,11 @@ window.onload = function() {
     scene.add( z_axis_point );
     z_axis_point.scale.set(0.02,0.02,0.02);
 
-    var geometry = new THREE.SphereGeometry( 1, 32, 32 );
-    var material = new THREE.MeshPhongMaterial( {color: orange} );
-    debugAnchor = new THREE.Mesh( geometry, material );
-    scene.add( debugAnchor );
-    debugAnchor.scale.set(0.02,0.02,0.02);
+    // var geometry = new THREE.SphereGeometry( 1, 32, 32 );
+    // var material = new THREE.MeshPhongMaterial( {color: orange} );
+    // debugAnchor = new THREE.Mesh( geometry, material );
+    // scene.add( debugAnchor );
+    // debugAnchor.scale.set(0.02,0.02,0.02);
 
     //reference points
     var geometry = new THREE.SphereGeometry( 1, 32, 32 );
