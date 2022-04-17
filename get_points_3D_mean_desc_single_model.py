@@ -1,9 +1,6 @@
 # This is used for single frame localization from a phone:
-# Example: python3 get_points_3D_mean_desc_single_model.py \
-#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/database.db \
-#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/images.bin \
-#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/model/0/points3D.bin \
-#                  /Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/descriptors_avg/avg_descs.npy
+# Example: python3 get_points_3D_mean_desc_single_model.py /home/alex/AR_CYENS/data/bedroom3/
+
 import os
 import sys
 
