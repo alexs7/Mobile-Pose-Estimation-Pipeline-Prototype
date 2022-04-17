@@ -172,8 +172,8 @@ window.onload = function() {
         console.log("Localised Action Hit");
         var frameName = req.body.frameName
         console.log(frameName);
-        var query_location = "/Users/alex/Projects/CYENS/ar_core_electron_query_images/"+frameName;
-        var pose = req.body.cameraDisplayOrientedPose
+        var query_location = "/Users/alex/Projects/CYENS/unity_electron_query_images/"+frameName;
+        var pose = req.body.cameraPose
 
         fs.writeFileSync(
             query_location,
@@ -184,21 +184,82 @@ window.onload = function() {
         //execSync("sips -r 90 /Users/alex/Projects/CYENS/ar_core_electron_query_images/"+frameName);
 
         fs.writeFileSync(
-            "/Users/alex/Projects/CYENS/ar_core_electron_query_images/query_name.txt",
+            "/Users/alex/Projects/CYENS/unity_electron_query_images/query_name.txt",
             frameName,
             function (err) {
                 if (err) return console.log(err);
             });
 
         fs.writeFileSync(
-            "/Users/alex/Projects/CYENS/ar_core_electron_query_images/cameraPose.txt",
+            "/Users/alex/Projects/CYENS/unity_electron_query_images/cameraPose.txt",
             pose, function(err) {
             console.log(err);
         });
 
         console.log("Localizing..")
+
         execSync("source venv/bin/activate && python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName,
             { cwd: '/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/' });
+
+        $(".frame").attr('src', 'data:image/png;base64,'+req.body.frameString);
+
+        camera_pose = req.body.cameraPose.split(',');
+        var x_local_cam_axis = req.body.x_local_cam_axis.split(',');
+        var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
+        var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
+
+        var tx = parseFloat(camera_pose[0]);
+        var ty = parseFloat(camera_pose[1]);
+        var tz = parseFloat(camera_pose[2]);
+        var qx = parseFloat(camera_pose[3]);
+        var qy = parseFloat(camera_pose[4]);
+        var qz = parseFloat(camera_pose[5]);
+        var qw = parseFloat(camera_pose[6]);
+
+        phone_cam.position.x = tx;
+        phone_cam.position.y = ty;
+        phone_cam.position.z = tz;
+
+        cameraWorldCenterPoint.position.x = tx;
+        cameraWorldCenterPoint.position.y = ty;
+        cameraWorldCenterPoint.position.z = tz;
+
+        var quaternion = new THREE.Quaternion();
+        quaternion.fromArray([qx, qy, qz, qw]);
+        quaternion.normalize(); // ?
+        phone_cam.setRotationFromQuaternion(quaternion);
+
+        x_axis_point.position.x = parseFloat(x_local_cam_axis[0]);
+        x_axis_point.position.y = parseFloat(x_local_cam_axis[1]);
+        x_axis_point.position.z = parseFloat(x_local_cam_axis[2]);
+
+        y_axis_point.position.x = parseFloat(y_local_cam_axis[0]);
+        y_axis_point.position.y = parseFloat(y_local_cam_axis[1]);
+        y_axis_point.position.z = parseFloat(y_local_cam_axis[2]);
+
+        z_axis_point.position.x = parseFloat(z_local_cam_axis[0]);
+        z_axis_point.position.y = parseFloat(z_local_cam_axis[1]);
+        z_axis_point.position.z = parseFloat(z_local_cam_axis[2]);
+
+        var pointsArray = req.body.pointCloud.split("\n");
+        pointsArray.pop(); // remove newline
+
+        scene.remove(arcore_points);
+        var pointsGeometry = new THREE.Geometry();
+        var material =  new THREE.PointsMaterial( { color: green, size: 0.02 } );
+
+        for (var i = 0; i < pointsArray.length; i++) {
+            x = parseFloat(pointsArray[i].split(" ")[0]);
+            y = parseFloat(pointsArray[i].split(" ")[1]);
+            z = parseFloat(pointsArray[i].split(" ")[2]);
+
+            pointsGeometry.vertices.push(
+                new THREE.Vector3(x, y, z)
+            )
+        }
+
+        arcore_points = new THREE.Points( pointsGeometry, material );
+        scene.add(arcore_points);
 
         console.log("Loading 3D points..")
         read3Dpoints();

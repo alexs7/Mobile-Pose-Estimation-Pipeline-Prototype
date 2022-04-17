@@ -70,6 +70,19 @@ def save_image_projected_points(image_path, K, FP, points3D):
         cv2.circle(image, center, 4, (0, 0, 255), -1)
     cv2.imwrite('/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/colmap_points_projected.jpg', image)
 
+def save_image_projected_points_unity(image_path, K, FP, points3D):
+    image = cv2.imread(image_path)
+    breakpoint()
+    points = K.dot(FP.dot(points3D.transpose())[0:3,:])
+    points = points // points[2,:]
+    points = points.transpose()
+    for i in range(len(points)):
+        x = int(points[i][0])
+        y = int(points[i][1])
+        center = (x, y)
+        cv2.circle(image, center, 4, (0, 0, 255), -1)
+    cv2.imwrite('/Users/alex/Projects/CYENS/colmap_models/colmap_points_projected.jpg', image)
+
 def get_ARCore_displayOrientedPose(dir, frame):
     return np.loadtxt(dir+"/displayOrientedPose_"+frame+".txt")
 
@@ -93,6 +106,26 @@ def get_ARCore_pose_query_image(path):
     qz = float(values[5])
     qw = float(values[6])
     quat = [qx, qy, qz, qw] # This already comes normalised - I checked the norm with matlab
+    rot = R.from_quat(quat)
+    rot = rot.as_dcm()
+    tvec = np.array([tx, ty, tz])
+    pose = np.c_[rot, tvec]
+    pose = np.r_[pose, [np.array([0, 0, 0, 1])]]
+    return pose
+
+def get_Unity_pose_query_image(path):
+    f = open(path, 'r')
+    x = f.readlines()
+    f.close()
+    values = x[0].split(',')
+    tx = float(values[0])
+    ty = float(values[1])
+    tz = float(values[2])
+    qx = float(values[3])
+    qy = float(values[4])
+    qz = float(values[5])
+    qw = float(values[6])
+    quat = [qx, qy, qz, qw]  # This already comes normalised - I checked the norm with matlab
     rot = R.from_quat(quat)
     rot = rot.as_dcm()
     tvec = np.array([tx, ty, tz])
