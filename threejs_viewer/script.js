@@ -55,7 +55,7 @@ window.onload = function() {
         var x_local_cam_axis = req.body.x_local_cam_axis.split(',');
         var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
         var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
-        debugger;
+
         //debugAnchorPosition = req.body.debugAnchorPositionForDisplayOrientedPose.split(",");
 
         var tx = parseFloat(camera_pose[0]);
@@ -230,6 +230,12 @@ window.onload = function() {
         var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
         var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
 
+        var anchor_position = req.body.anchorPose.split(',');
+        console.log(anchor_position);
+        anchor.position.x = parseFloat(anchor_position[0]);
+        anchor.position.y = parseFloat(anchor_position[1]);
+        anchor.position.z = parseFloat(anchor_position[2]);
+
         var tx = parseFloat(camera_pose[0]);
         var ty = parseFloat(camera_pose[1]);
         var tz = parseFloat(camera_pose[2]);
@@ -282,14 +288,9 @@ window.onload = function() {
         arcore_points = new THREE.Points( pointsGeometry, material );
         scene.add(arcore_points);
 
-        console.log("Loading 3D points..");
-
-        var points_file_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/points3D_AR.txt";
-        read3Dpoints(points_file_path);
         renderer.render( scene, camera );
-        var colmapPoints = return3Dpoints(points_file_path);
 
-        res.status(200).json({ points: colmapPoints });
+        res.status(200);
 
     });
 
@@ -359,6 +360,14 @@ window.onload = function() {
     z_axis_point.position.z = 0.1;
     scene.add( z_axis_point );
     z_axis_point.scale.set(0.02,0.02,0.02);
+
+    //anchor point
+    var geometry = new THREE.SphereGeometry( 1, 32, 32 );
+    var material = new THREE.MeshPhongMaterial( {color: yellow} );
+    anchor = new THREE.Mesh( geometry, material );
+    anchor.position.z = 0;
+    scene.add( anchor );
+    anchor.scale.set(0.02,0.02,0.02);
 
     //reference points
     var geometry = new THREE.SphereGeometry( 1, 32, 32 );

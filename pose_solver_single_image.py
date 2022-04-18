@@ -31,7 +31,7 @@ def apply_transform(colmap_pose, arcore_pose, scale, points3D_xyz_rgb):
     return points3D_xyz_rgb_transformed
 
 def apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb):
-    colmap_to_unity_matrix = np.array([[-1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0]])
+    colmap_to_unity_matrix = np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0]])
     colmap_to_unity_matrix = scale * colmap_to_unity_matrix
     colmap_to_unity_matrix = np.r_[colmap_to_unity_matrix, [np.array([0, 0, 0, 1])]]
 
