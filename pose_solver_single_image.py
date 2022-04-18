@@ -37,7 +37,7 @@ def apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb):
 
     # -90 degrees
     rotZ = np.array([[0, 1, 0, 0], [-1, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    intermediate_matrix = rotZ.dot(colmap_to_unity_matrix)
+    intermediate_matrix = (colmap_to_unity_matrix)
 
     # from_colmap_world_to_colmap_camera
     points3D = colmap_pose.dot(np.transpose(points3D_xyz_rgb[:,0:4])) #homogeneous

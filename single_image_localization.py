@@ -16,7 +16,8 @@ data_dir = sys.argv[1]
 def add_ones(x):
     return np.hstack((x,np.ones((x.shape[0], 1))))
 
-K = np.loadtxt("/Users/alex/Projects/CYENS/matrices/pixel_intrinsics_low_640_landscape_unity.txt")
+K = np.loadtxt("/Users/alex/Projects/CYENS/matrices/pixel_intrinsics_low_640_portrait_unity.txt")
+
 with open("/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/query_name.txt") as f:
     query_frame_name = f.readlines()[0]
 
@@ -26,6 +27,8 @@ query_images_dir = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/"
 image_list_file = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/query_name.txt"
 descs_avg_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/model/0/avg_descs.npy"
 unity_cam_pose = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/cameraPose.txt"
+
+os.system("sips -r -90 " + os.path.join(query_images_dir, query_frame_name))
 
 db = COLMAPDatabase.connect(db_path)
 points3D = read_points3d_default(points3D_path)
@@ -64,7 +67,7 @@ print("Solver took: " + str(elapsed_time))
 print("AT")
 start = time.time()
 unity_pose = get_Unity_pose_query_image(unity_cam_pose)
-scale =  0.08750059930577465 # this is from the server
+scale =  0.1355040021732743 # this is from locally
 # points3D_xyz = add_ones(points3D_xyz) # homogeneous
 points3DARCore = apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb)
 end = time.time()
