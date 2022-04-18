@@ -38,63 +38,8 @@ var cameraPoseStringMatrix;
 
 window.onload = function() {
 
-    $(".useCameraDisplayOrientedPose").click(function(){
-        useCameraDisplayOrientedPose = true;
-    });
-
-    $(".useCameraPose").click(function(){
-        useCameraDisplayOrientedPose = false;
-    });
-
-    //assign button listeners
-    $(".resetCamera").click(function(){
-        camera.position.set( 0.1, 1, 1 );
-        camera.lookAt(scene.position);
-        controls.update();
-    });
-
-    $(".exportPoints").click(function(){
-        exportARCorePointCloud();
-    });
-
-    $(".loadCOLMAPpoints").click(function(){
-        get3DPoints();
-        read3Dpoints();
-        console.log("Done loading points! you can scale them now!");
-    });
-
     $(".viewARCoreCame").click(function(){
-
-        // tx = parseFloat(cameraDisplayOrientedPose[0]);
-        // ty = parseFloat(cameraDisplayOrientedPose[1]);
-        // tz = parseFloat(cameraDisplayOrientedPose[2]);
-        // qx = parseFloat(cameraDisplayOrientedPose[3]);
-        // qy = parseFloat(cameraDisplayOrientedPose[4]);
-        // qz = parseFloat(cameraDisplayOrientedPose[5]);
-        // qw = parseFloat(cameraDisplayOrientedPose[6]);
-        //
-        // phone_cam_1.position.x = tx;
-        // phone_cam_1.position.y = ty;
-        // phone_cam_1.position.z = tz ;
-        //
-        // var rotMatrix = new THREE.Matrix4();
-        // var quat = new THREE.Quaternion();
-        // quat.fromArray([qx,qy,qz,qw]);
-        // quat.normalize();
-        // rotMatrix.makeRotationFromQuaternion(quat);
-        // rotMatrix.setPosition(tx,ty,tz);
-        //
-        // var lookAtPoint =  new THREE.Vector4([0, 0, -1, 1]);
-        // lookAtPoint.applyMatrix4(rotMatrix);
-        //
-        // debugger;
-        // phone_cam_1.lookAt(0,0,0);
-
-        //controls.update();
-    });
-
-    $( ".localiseButton" ).click(function() {
-        //localise(cameraDisplayOrientedPose);
+        //nothing
     });
 
     //start server
@@ -106,10 +51,11 @@ window.onload = function() {
 
         $(".frame").attr('src', 'data:image/png;base64,'+req.body.frameString);
 
-        camera_pose = req.body.cameraPose.split(',');
+        camera_pose = req.body.cameraPoseLocal.split(','); // switch between cameraPoseLocal and cameraPoseWorld
         var x_local_cam_axis = req.body.x_local_cam_axis.split(',');
         var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
         var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
+        debugger;
         //debugAnchorPosition = req.body.debugAnchorPositionForDisplayOrientedPose.split(",");
 
         var tx = parseFloat(camera_pose[0]);
@@ -172,8 +118,9 @@ window.onload = function() {
         console.log("Localised Action Hit");
         var frameName = req.body.frameName
         console.log(frameName);
-        var query_location = "/Users/alex/Projects/CYENS/unity_electron_query_images/"+frameName;
-        var pose = req.body.cameraPose
+        var data_dir = "bedroom4"; //change this
+        var query_location = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/"+frameName;
+        var pose = req.body.cameraPoseLocal
 
         fs.writeFileSync(
             query_location,
@@ -184,26 +131,26 @@ window.onload = function() {
         //execSync("sips -r 90 /Users/alex/Projects/CYENS/ar_core_electron_query_images/"+frameName);
 
         fs.writeFileSync(
-            "/Users/alex/Projects/CYENS/unity_electron_query_images/query_name.txt",
+            "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/query_name.txt",
             frameName,
             function (err) {
                 if (err) return console.log(err);
             });
 
         fs.writeFileSync(
-            "/Users/alex/Projects/CYENS/unity_electron_query_images/cameraPose.txt",
+            "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/cameraPose.txt",
             pose, function(err) {
             console.log(err);
         });
 
         console.log("Localizing..")
 
-        execSync("source venv/bin/activate && python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + frameName,
+        execSync("source venv/bin/activate && python3 /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/single_image_localization.py " + data_dir,
             { cwd: '/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/' });
 
         $(".frame").attr('src', 'data:image/png;base64,'+req.body.frameString);
 
-        camera_pose = req.body.cameraPose.split(',');
+        camera_pose = pose.split(',');
         var x_local_cam_axis = req.body.x_local_cam_axis.split(',');
         var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
         var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
@@ -252,7 +199,6 @@ window.onload = function() {
             x = parseFloat(pointsArray[i].split(" ")[0]);
             y = parseFloat(pointsArray[i].split(" ")[1]);
             z = parseFloat(pointsArray[i].split(" ")[2]);
-
             pointsGeometry.vertices.push(
                 new THREE.Vector3(x, y, z)
             )
@@ -261,25 +207,90 @@ window.onload = function() {
         arcore_points = new THREE.Points( pointsGeometry, material );
         scene.add(arcore_points);
 
-        console.log("Loading 3D points..")
-        read3Dpoints();
+        console.log("Loading 3D points..");
+
+        var points_file_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/points3D_AR.txt";
+        read3Dpoints(points_file_path);
         renderer.render( scene, camera );
-
-        var colmapPoints = return3Dpoints();
+        var colmapPoints = return3Dpoints(points_file_path);
 
         res.status(200).json({ points: colmapPoints });
 
     });
 
-    app.post('/getModel', (req, res) => {
-        // var colmapPoints = getModel();
-        var colmapPoints = loadPoints3DFromFile();
+    app.post('/localise_debug', (req, res) => {
+
+        console.log("Localised Debug Action Hit");
+        var pose = req.body.cameraPoseLocal
+
+        $(".frame").attr('src', 'data:image/png;base64,'+req.body.frameString);
+
+        camera_pose = pose.split(',');
+        var x_local_cam_axis = req.body.x_local_cam_axis.split(',');
+        var y_local_cam_axis = req.body.y_local_cam_axis.split(',');
+        var z_local_cam_axis = req.body.z_local_cam_axis.split(',');
+
+        var tx = parseFloat(camera_pose[0]);
+        var ty = parseFloat(camera_pose[1]);
+        var tz = parseFloat(camera_pose[2]);
+        var qx = parseFloat(camera_pose[3]);
+        var qy = parseFloat(camera_pose[4]);
+        var qz = parseFloat(camera_pose[5]);
+        var qw = parseFloat(camera_pose[6]);
+
+        phone_cam.position.x = tx;
+        phone_cam.position.y = ty;
+        phone_cam.position.z = tz;
+
+        cameraWorldCenterPoint.position.x = tx;
+        cameraWorldCenterPoint.position.y = ty;
+        cameraWorldCenterPoint.position.z = tz;
+
+        var quaternion = new THREE.Quaternion();
+        quaternion.fromArray([qx, qy, qz, qw]);
+        quaternion.normalize(); // ?
+        phone_cam.setRotationFromQuaternion(quaternion);
+
+        x_axis_point.position.x = parseFloat(x_local_cam_axis[0]);
+        x_axis_point.position.y = parseFloat(x_local_cam_axis[1]);
+        x_axis_point.position.z = parseFloat(x_local_cam_axis[2]);
+
+        y_axis_point.position.x = parseFloat(y_local_cam_axis[0]);
+        y_axis_point.position.y = parseFloat(y_local_cam_axis[1]);
+        y_axis_point.position.z = parseFloat(y_local_cam_axis[2]);
+
+        z_axis_point.position.x = parseFloat(z_local_cam_axis[0]);
+        z_axis_point.position.y = parseFloat(z_local_cam_axis[1]);
+        z_axis_point.position.z = parseFloat(z_local_cam_axis[2]);
+
+        var pointsArray = req.body.pointCloud.split("\n");
+        pointsArray.pop(); // remove newline
+
+        scene.remove(arcore_points);
+        var pointsGeometry = new THREE.Geometry();
+        var material =  new THREE.PointsMaterial( { color: green, size: 0.02 } );
+
+        for (var i = 0; i < pointsArray.length; i++) {
+            x = parseFloat(pointsArray[i].split(" ")[0]);
+            y = parseFloat(pointsArray[i].split(" ")[1]);
+            z = parseFloat(pointsArray[i].split(" ")[2]);
+            pointsGeometry.vertices.push(
+                new THREE.Vector3(x, y, z)
+            )
+        }
+
+        arcore_points = new THREE.Points( pointsGeometry, material );
+        scene.add(arcore_points);
+
+        console.log("Loading 3D points..");
+
+        var points_file_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/points3D_AR.txt";
+        read3Dpoints(points_file_path);
+        renderer.render( scene, camera );
+        var colmapPoints = return3Dpoints(points_file_path);
+
         res.status(200).json({ points: colmapPoints });
-    });
 
-
-    app.post('/reload', (req, res) => {
-        getCurrentWindow().reload();
     });
 
     server = app.listen(3000, () => console.log(`Started server at http://localhost:3000!`));
@@ -322,12 +333,6 @@ window.onload = function() {
     phone_cam.scale.set(0.1,0.1,0.1);
     scene.add( phone_cam );
 
-    // var geometry = new THREE.SphereGeometry( 1, 32, 32 );
-    // var material = new THREE.MeshPhongMaterial( {color: yellow} );
-    // anchor = new THREE.Mesh( geometry, material );
-    // scene.add( anchor );
-    // anchor.scale.set(0.03,0.03,0.03);
-
     var geometry = new THREE.SphereGeometry( 1, 32, 32 );
     var material = new THREE.MeshPhongMaterial( {color: white } );
     cameraWorldCenterPoint = new THREE.Mesh( geometry, material );
@@ -354,12 +359,6 @@ window.onload = function() {
     z_axis_point.position.z = 0.1;
     scene.add( z_axis_point );
     z_axis_point.scale.set(0.02,0.02,0.02);
-
-    // var geometry = new THREE.SphereGeometry( 1, 32, 32 );
-    // var material = new THREE.MeshPhongMaterial( {color: orange} );
-    // debugAnchor = new THREE.Mesh( geometry, material );
-    // scene.add( debugAnchor );
-    // debugAnchor.scale.set(0.02,0.02,0.02);
 
     //reference points
     var geometry = new THREE.SphereGeometry( 1, 32, 32 );
@@ -422,16 +421,9 @@ window.onload = function() {
     });
 };
 
-function get3DPoints(){
-    console.log("Getting 3D points from COLMAP");
-    execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 create_3D_points_for_ARCore_debug.py');
-}
-
-function read3Dpoints(){
+function read3Dpoints(file_path){
 
     scene.remove(colmap_points); // remove previous ones
-
-    const file_path = '/Users/alex/Projects/CYENS/colmap_models/points3D_AR.txt';
 
     var data = fs.readFileSync(file_path);
     data = data.toString().split('\n');
@@ -457,13 +449,11 @@ function read3Dpoints(){
     var material =  new THREE.PointsMaterial( { vertexColors: THREE.VertexColors, size: 0.1 } );
     colmap_points = new THREE.Points( geometry, material );
 
-    //colmap_points.rotation.z = Math.PI/2;
+    colmap_points.material.size = 0.015;
     scene.add(colmap_points);
 }
 
-function return3Dpoints(){ //same as read3Dpoints but returns them
-
-    const file_path = '/Users/alex/Projects/CYENS/colmap_models/points3D_AR.txt';
+function return3Dpoints(file_path){ //same as read3Dpoints but returns them
 
     var data = fs.readFileSync(file_path);
     data = data.toString().split('\n');
@@ -496,52 +486,4 @@ function return3Dpoints(){ //same as read3Dpoints but returns them
     }
 
     return points_array
-}
-
-function getModel(){
-    const file_path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/all_points3D.txt';
-
-    var data = fs.readFileSync(file_path);
-    data = data.toString().split('\n');
-
-    return data;
-}
-
-function loadPoints3DFromFile(){
-    const file_path = '/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/points3D_AR.txt';
-
-    var data = fs.readFileSync(file_path);
-    data = data.toString().split('\n');
-
-    return data;
-}
-
-function exportMatrixString(matrix, name){
-    fs.writeFileSync("/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/"+name+".txt",
-        matrix, 'utf8', function(err) {
-            console.log(err);
-        });
-}
-
-function exportARCorePointCloud() {
-
-    var arcore_points_String = "";
-    for (var i = 0; i < arcore_points.geometry.vertices.length; i++) {
-
-        var x = arcore_points.geometry.vertices[i].x;
-        var y = arcore_points.geometry.vertices[i].y;
-        var z = arcore_points.geometry.vertices[i].z;
-
-        arcore_points_String += x + " " + y + " " + z + " " + 1 +"\n"
-    }
-
-    fs.writeFileSync("/Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/colmap_data/data/arcore_pointCloud.txt",
-        arcore_points_String, 'utf8', function(err) {
-            console.log(err);
-        });
-}
-
-function debug_COLMAP_points(scale){
-    execSync('cd /Users/alex/Projects/EngDLocalProjects/Lego/fullpipeline/ && python3 create_3D_points_for_ARCore_debug.py ' + scale);
-    read3Dpoints();
 }

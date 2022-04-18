@@ -70,9 +70,8 @@ def save_image_projected_points(image_path, K, FP, points3D):
         cv2.circle(image, center, 4, (0, 0, 255), -1)
     cv2.imwrite('/Users/alex/Projects/EngDLocalProjects/LEGO/fullpipeline/colmap_data/data/colmap_points_projected.jpg', image)
 
-def save_image_projected_points_unity(image_path, K, FP, points3D):
+def save_image_projected_points_unity(image_path, K, FP, points3D, output_path):
     image = cv2.imread(image_path)
-    breakpoint()
     points = K.dot(FP.dot(points3D.transpose())[0:3,:])
     points = points // points[2,:]
     points = points.transpose()
@@ -80,8 +79,8 @@ def save_image_projected_points_unity(image_path, K, FP, points3D):
         x = int(points[i][0])
         y = int(points[i][1])
         center = (x, y)
-        cv2.circle(image, center, 4, (0, 0, 255), -1)
-    cv2.imwrite('/Users/alex/Projects/CYENS/colmap_models/colmap_points_projected.jpg', image)
+        cv2.circle(image, center, 2, (0, 0, 255), -1)
+    cv2.imwrite(output_path, image)
 
 def get_ARCore_displayOrientedPose(dir, frame):
     return np.loadtxt(dir+"/displayOrientedPose_"+frame+".txt")

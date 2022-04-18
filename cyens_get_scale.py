@@ -13,20 +13,16 @@ def calc_scale_COLMAP_UNITY(unity_devices_poses_path, colmap_model_images_path):
 
     model_images = read_images_binary(colmap_model_images_path)
     model_images_names = get_images_names(model_images)
-    model_images_names = model_images_names[:10] # TODO: Only use the ones from Unity (Will need to change that in the future)
+    model_images_names = model_images_names
     unity_cam_centers = {} #This in metric
 
-    for file in glob.glob(os.path.join(unity_devices_poses_path,"*.txt")):
+    for file in glob.glob(os.path.join(unity_devices_poses_path,"local_pose_*.txt")): #or world_pose is the same
         with open(file) as f:
             lines = f.readlines()
         values = lines[0].split(',')
         tx = float(values[0])
         ty = float(values[1])
         tz = float(values[2])
-        qx = float(values[3])
-        qy = float(values[4])
-        qz = float(values[5])
-        qw = float(values[6])
         cam_center = np.array([tx, ty, tz]) # In Unity the matrices' t component is the camera center in the world
         unity_cam_centers["frame_"+file.split("_")[-1].split(".")[0]+".jpg"] = cam_center
 
