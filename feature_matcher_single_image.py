@@ -38,7 +38,14 @@ def feature_matcher_wrapper(db, query_image, trainDescriptors, points3D_xyz_rgb,
     keypoints_xy = get_keypoints_xy(db, image_id)
     queryDescriptors = get_queryDescriptors(db, image_id)
 
-    matcher = cv2.BFMatcher()  # cv2.FlannBasedMatcher(Parameters.index_params, Parameters.search_params) # or cv.BFMatcher()
+    #FLANN
+    FLANN_INDEX_KDTREE = 1 #https://docs.opencv.org/3.4.0/dc/d8c/namespacecvflann.html
+    index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+    search_params = dict(checks=50)  # or pass empty dictionary
+    matcher = cv2.FlannBasedMatcher(index_params, search_params)
+    #or BruteForce
+    #matcher = cv2.BFMatcher()  # cv2.FlannBasedMatcher(Parameters.index_params, Parameters.search_params) # or cv.BFMatcher()
+
     # Matching on trainDescriptors (remember these are the means of the 3D points)
     temp_matches = matcher.knnMatch(queryDescriptors, trainDescriptors, k=2)
 

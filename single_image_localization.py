@@ -1,6 +1,7 @@
 # Remember to get the points average for the model first, get_points_3D_mean_desc_single_model.py
 #  and the scale python3 get_scale.py
 import os
+import subprocess
 import sys
 import time
 import numpy as np
@@ -27,8 +28,9 @@ query_images_dir = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/"
 image_list_file = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/query_name.txt"
 descs_avg_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/model/0/avg_descs.npy"
 unity_cam_pose = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/cameraPose.txt"
+scale_txt_file = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/scale.txt"
 
-os.system("sips -r -90 " + os.path.join(query_images_dir, query_frame_name))
+subprocess.check_call(["sips", "-r", "-90", os.path.join(query_images_dir, query_frame_name)], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 db = COLMAPDatabase.connect(db_path)
 points3D = read_points3d_default(points3D_path)
@@ -67,7 +69,12 @@ print("Solver took: " + str(elapsed_time))
 print("AT")
 start = time.time()
 unity_pose = get_Unity_pose_query_image(unity_cam_pose)
-scale =  0.1355040021732743 # this is from locally
+
+with open(scale_txt_file, 'r') as f:
+    scale = f.read()
+
+scale = float(scale)
+
 # points3D_xyz = add_ones(points3D_xyz) # homogeneous
 points3DARCore = apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb)
 end = time.time()

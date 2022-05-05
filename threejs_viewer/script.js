@@ -118,7 +118,7 @@ window.onload = function() {
         console.log("Localised Action Hit");
         var frameName = req.body.frameName
         console.log(frameName);
-        var data_dir = "cyens7"; //change this
+        var data_dir = "bedroom_gopro_1"; //change this
         var query_location = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/"+frameName;
         var pose = req.body.cameraPoseLocal
 
