@@ -118,7 +118,7 @@ window.onload = function() {
         console.log("Localised Action Hit");
         var frameName = req.body.frameName
         console.log(frameName);
-        var data_dir = "bedroom_gopro_1"; //change this
+        var data_dir = $("#data_to_use").val();
         var query_location = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/"+frameName;
         var pose = req.body.cameraPoseLocal
 
@@ -210,11 +210,17 @@ window.onload = function() {
         console.log("Loading 3D points..");
 
         var points_file_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/points3D_AR.txt";
+        var quat_file_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/quat.txt";
+        var trans_file_path = "/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/trans.txt";
         read3Dpoints(points_file_path);
+
         renderer.render( scene, camera );
         var colmapPoints = return3Dpoints(points_file_path);
 
-        res.status(200).json({ points: colmapPoints });
+        var quat = fs.readFileSync(quat_file_path).toString();
+        var trans = fs.readFileSync(trans_file_path).toString();
+
+        res.status(200).json({ points: colmapPoints, trans: trans, quat: quat });
 
     });
 

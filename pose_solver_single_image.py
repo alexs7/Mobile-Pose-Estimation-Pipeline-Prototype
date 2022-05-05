@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.spatial.transform import Rotation as R
 from ransac_prosac import ransac
 
 def solve(matches, intrinsics):
@@ -47,5 +47,12 @@ def apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb):
     points3D = (unity_pose.dot(points3D))
     points3D = np.transpose(points3D)
 
+    final_pose = np.matmul(unity_pose, np.matmul(intermediate_matrix, colmap_pose))
+
+    #https://www.andre-gaschler.com/rotationconverter/
+    # qx, qy, qz, qw
+    quat = R.from_matrix(final_pose[0:3,0:3]).as_quat() #read this: https://math.stackexchange.com/questions/3292034/normalizing-a-rotation-matrix
+    trans = final_pose[:,3]
+
     points3D_xyz_rgb_transformed = np.c_[points3D, points3D_xyz_rgb[:,4:7]] #xyz , 1, rgb
-    return points3D_xyz_rgb_transformed
+    return points3D_xyz_rgb_transformed, quat, trans

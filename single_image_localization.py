@@ -76,7 +76,7 @@ with open(scale_txt_file, 'r') as f:
 scale = float(scale)
 
 # points3D_xyz = add_ones(points3D_xyz) # homogeneous
-points3DARCore = apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb)
+points3DARCore, quat, trans = apply_transform_unity(colmap_pose, unity_pose, scale, points3D_xyz_rgb)
 end = time.time()
 elapsed_time = end - start
 total_elapsed_time += elapsed_time
@@ -89,5 +89,7 @@ save_image_projected_points_unity(os.path.join(query_images_dir, query_frame_nam
 
 print("Saving..")
 np.savetxt("/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/points3D_AR.txt", points3DARCore)
+np.savetxt("/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/quat.txt", quat)
+np.savetxt("/Users/alex/Projects/CYENS/colmap_models/"+data_dir+"/trans.txt", trans)
 
 print("Total time: " + str(total_elapsed_time))
