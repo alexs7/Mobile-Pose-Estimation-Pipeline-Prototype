@@ -10,7 +10,7 @@ import numpy as np
 
 # In order for this to work you have to transfer the images manually into the correct folders first
 # Remember to undistort images first
-path = sys.argv[1] # i.e /home/alex/AR_CYENS/data/
+path = sys.argv[1] # i.e /home/alex/AR_CYENS/data/cyens11
 
 #base mode paths
 base_db_path = os.path.join(path,"database.db")

@@ -65,7 +65,7 @@ def feature_extractor(database_path, image_path, image_list_path=None, ini_save_
 
     # Call COLMAP.
     colmap_command = [colmap_bin, "feature_extractor", "--project_path", ini_save_path]
-
+    # print(colmap_command)
     subprocess.check_call(colmap_command)
 
 def vocab_tree_matcher(database_path, match_list_path=None, ini_save_path=None, params=None):
