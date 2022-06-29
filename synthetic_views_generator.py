@@ -38,8 +38,8 @@ def parseCamParam(cam):
     cam_params.intrinsic = intrinsics
     # rotm = o3d.geometry.Geometry3D.get_rotation_matrix_from_zyx(rotation = [y * DEG2RAD, p * DEG2RAD, r * DEG2RAD])
     # rotm = R.from_euler('zyx', [y * DEG2RAD, p * DEG2RAD, r * DEG2RAD], degrees=False).as_dcm()
-    # rotm = eulerToRotMRC(y * DEG2RAD, p * DEG2RAD, r * DEG2RAD)
-    rotm = np.eye(3)
+    rotm = eulerToRotMRC(y * DEG2RAD, p * DEG2RAD, r * DEG2RAD)
+    # rotm = np.eye(3)
     trans = [cam_center_cx, cam_center_cy, cam_center_cz]
     extrinsics = np.r_[np.c_[rotm, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
     cam_params.extrinsic = extrinsics
@@ -85,11 +85,18 @@ for cam in cams_csv:
     cam_center_cy = cam[2]
     cam_center_cz = cam[3]
     trans = np.array([cam_center_cx, cam_center_cy, cam_center_cz])
-    rot_fix_0 = np.array([[1, 0, 0] , [0, -1, 0] , [0, 0, -1]])
-    rot_fix_1 = np.array([[-1, 0, 0] , [0, 1, 0] , [0, 0, -1]])
-    rot_fix = np.matmul(rot_fix_0, rot_fix_1)
+    rot_fix = np.array([[0, -1, 0] , [-1, 0, 0] , [0, 0, -1]])
+    # rot_fix_1 = np.array([[-1, 0, 0] , [0, 1, 0] , [0, 0, -1]])
+    # rot_fix = np.matmul(rot_fix_0, rot_fix_1)
+    # breakpoint()
+    # extrinsics = np.r_[np.c_[np.eye(3), trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+    extrinsics = cam_params.extrinsic
+    rot_mat = extrinsics[0:3,0:3] # in camera coordinates
+    rot_mat_fixed = np.matmul(rot_mat, rot_fix)
+    extrinsics = np.r_[np.c_[rot_mat_fixed, trans], np.array([0, 0, 0, 1]).reshape(1, 4)]
+
     cam_vis = o3d.geometry.LineSet.create_camera_visualization(cam_params.intrinsic.width, cam_params.intrinsic.height,
-                                                               cam_params.intrinsic.intrinsic_matrix, np.r_[np.c_[rot_fix, trans], np.array([0, 0, 0, 1]).reshape(1,4)])
+                                                               cam_params.intrinsic.intrinsic_matrix, np.linalg.inv(extrinsics))
     vis.add_geometry(cam_vis)
 
 local_params = o3d.io.read_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test.json")
