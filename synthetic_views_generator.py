@@ -5,6 +5,8 @@ import os
 import cv2
 from scipy.spatial.transform import Rotation as R
 
+DEG2RAD = np.pi / 180
+
 def eulerToRotMRC(y, p, r): #radians
     cx = np.cos(r)
     cy = np.cos(p)
@@ -55,16 +57,44 @@ def getPoints(cams_csv):
         points = np.r_[ points, np.reshape(point, [1, 3])]
     return points
 
+def create_cams_from_bundler(bundler_data, cams_csv):
+    h = 1080
+    w = 1920
+    f = 935.3
+    px = 959.5
+    py = 539.5
+    bundler_cams = []
+    for i in range(3, len(bundler_data), 5):
+        if( i >= len(cams_csv) * 5 ):
+            break
+        k = i
+        r1 = np.fromstring(bundler_data[k], sep=" ")
+        r2 = np.fromstring(bundler_data[k+1], sep=" ")
+        r3 = np.fromstring(bundler_data[k+2], sep=" ")
+        t = np.fromstring(bundler_data[k+3], sep=" ")
+        rotm = np.array([r1, r2, r3])
+        intrinsics = o3d.camera.PinholeCameraIntrinsic(w, h, f, f, px, py)
+        cam_params = o3d.camera.PinholeCameraParameters()
+        cam_params.intrinsic = intrinsics
+        extrinsics = np.r_[np.c_[rotm, t], np.array([0, 0, 0, 1]).reshape(1, 4)]
+        cam_params.extrinsic = extrinsics
+        bundler_cams.append(cam_params)
+    return bundler_cams
+
 print("Loading objects...")
 cams_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv"
 mesh_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx"
 imgs_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/IMAGES/C0002 frames"
 bundler_file_path_right_handed = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/BUNDLER/1st_MODEL_-_4k_Video_Photogrammetry.out"
+bundler_file_path_left_handed = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/BUNDLER/Positive_1st_MODEL_-_4k_Video_Photogrammetry.out"
+
+# switch file here
 with open(bundler_file_path_right_handed) as f:
     bundler_file_right_handed = f.readlines()
 
-DEG2RAD = np.pi / 180
 cams_csv = np.loadtxt(cams_path, dtype='object, float, float, float, float, float, float, float, float, float, float, float, float, float', usecols=(range(0,14)), delimiter=',')
+cams_bundler = create_cams_from_bundler(bundler_file_right_handed, cams_csv)
+
 origin = o3d.geometry.TriangleMesh.create_coordinate_frame()
 print("Reading mesh...")
 mesh = o3d.io.read_triangle_mesh(mesh_path)
@@ -81,38 +111,68 @@ vis.add_geometry(mesh)
 vis.add_geometry(origin)
 vis.add_geometry(pointcloud)
 
-# first attempt
-for cam in cams_csv:
-    cam_params = parseCamParam(cam)
-    cam_center_cx = cam[1]  # world
-    cam_center_cy = cam[2]
-    cam_center_cz = cam[3]
-    trans = np.array([cam_center_cx, cam_center_cy, cam_center_cz])
+#  second attempt bundler poses - right handed
+for cam in cams_bundler:
+    extrinsics = cam.extrinsic #in camera coordinates
 
-    # experimenting
-    # rot_fix = np.array([[0, -1, 0] , [-1, 0, 0] , [0, 0, -1]])
-    # rot_fix_1 = np.array([[-1, 0, 0] , [0, 1, 0] , [0, 0, -1]])
-    # rot_fix = np.matmul(rot_fix_0, rot_fix_1)
-    # rot_fix = np.array([[1, 1, 1] , [-1, -1, -1] , [-1, -1, -1]])
-    # rot_fix = np.array([[1, 0, 0] , [0, -1, 0] , [0, 0, -1]])
-    extrinsics = cam_params.extrinsic
-    rot_mat = extrinsics[0:3,0:3] # in camera coordinates
-    rot_mat = np.array([rot_mat[0,0:3] , -rot_mat[1,0:3] , -rot_mat[2,0:3]])
-    # rot_mat_fixed = np.matmul(rot_mat, rot_fix)
-    extrinsics = np.r_[np.c_[rot_mat, trans], np.array([0, 0, 0, 1]).reshape(1, 4)]
-    # extrinsics = np.r_[np.c_[rot_mat_fixed, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
-    # extrinsics = np.r_[np.c_[rot_mat, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
-    # extrinsics = np.r_[np.c_[np.eye(3), trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+    rot_fix_1 = np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
 
-    # breakpoint()
-    cam_vis = o3d.geometry.LineSet.create_camera_visualization(cam_params.intrinsic.width, cam_params.intrinsic.height,
-                                                               cam_params.intrinsic.intrinsic_matrix, np.linalg.inv(extrinsics))
+    # set to world coordinates
+    inverse = np.linalg.inv(extrinsics)
+    rotm_inv = inverse[0:3, 0:3]
+    # flip around the x-axis 180
+    rotm_inv = np.matmul(rotm_inv, rot_fix_1)
+    trans_inv = inverse[0:3, 3]
+    extrinsics = np.r_[np.c_[rotm_inv, trans_inv], np.array([0, 0, 0, 1]).reshape(1, 4)]
 
-    cam_vis_coor_sys = o3d.geometry.TriangleMesh.create_coordinate_frame(origin = trans)
-    cam_vis_coor_sys.rotate(np.eye(3))
+    # reset back to camera coordinates
+    extrinsics = np.linalg.inv(extrinsics)
+
+    rotm = extrinsics[0:3, 0:3]
+    trans = extrinsics[0:3,3]
+
+    cam_vis = o3d.geometry.LineSet.create_camera_visualization(cam.intrinsic.width, cam.intrinsic.height,
+                                                               cam.intrinsic.intrinsic_matrix, extrinsics)
+
+
+    cam_vis_coor_sys = o3d.geometry.TriangleMesh.create_coordinate_frame(origin = trans_inv)
+    cam_vis_coor_sys.rotate(rotm_inv)
 
     vis.add_geometry(cam_vis)
     vis.add_geometry(cam_vis_coor_sys)
+
+# first attempt
+# for cam in cams_csv:
+#     cam_params = parseCamParam(cam)
+#     cam_center_cx = cam[1]  # world
+#     cam_center_cy = cam[2]
+#     cam_center_cz = cam[3]
+#     trans = np.array([cam_center_cx, cam_center_cy, cam_center_cz])
+#
+#     # experimenting
+#     # rot_fix = np.array([[0, -1, 0] , [-1, 0, 0] , [0, 0, -1]])
+#     # rot_fix_1 = np.array([[-1, 0, 0] , [0, 1, 0] , [0, 0, -1]])
+#     # rot_fix = np.matmul(rot_fix_0, rot_fix_1)
+#     # rot_fix = np.array([[1, 1, 1] , [-1, -1, -1] , [-1, -1, -1]])
+#     # rot_fix = np.array([[1, 0, 0] , [0, -1, 0] , [0, 0, -1]])
+#     extrinsics = cam_params.extrinsic
+#     rot_mat = extrinsics[0:3,0:3] # in camera coordinates
+#     rot_mat = np.array([rot_mat[0,0:3] , -rot_mat[1,0:3] , -rot_mat[2,0:3]])
+#     # rot_mat_fixed = np.matmul(rot_mat, rot_fix)
+#     extrinsics = np.r_[np.c_[rot_mat, trans], np.array([0, 0, 0, 1]).reshape(1, 4)]
+#     # extrinsics = np.r_[np.c_[rot_mat_fixed, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+#     # extrinsics = np.r_[np.c_[rot_mat, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+#     # extrinsics = np.r_[np.c_[np.eye(3), trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+#
+#     # breakpoint()
+#     cam_vis = o3d.geometry.LineSet.create_camera_visualization(cam_params.intrinsic.width, cam_params.intrinsic.height,
+#                                                                cam_params.intrinsic.intrinsic_matrix, np.linalg.inv(extrinsics))
+#
+#     cam_vis_coor_sys = o3d.geometry.TriangleMesh.create_coordinate_frame(origin = trans)
+#     cam_vis_coor_sys.rotate(np.eye(3))
+#
+#     vis.add_geometry(cam_vis)
+#     vis.add_geometry(cam_vis_coor_sys)
 
 local_params = o3d.io.read_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_initial_position.json") #this was created manually
 vis.get_view_control().convert_from_pinhole_camera_parameters(local_params, allow_arbitrary = False)
