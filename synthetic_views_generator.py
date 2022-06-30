@@ -59,13 +59,15 @@ print("Loading objects...")
 cams_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv"
 mesh_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx"
 imgs_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/IMAGES/C0002 frames"
+bundler_file_path_right_handed = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/BUNDLER/1st_MODEL_-_4k_Video_Photogrammetry.out"
+with open(bundler_file_path_right_handed) as f:
+    bundler_file_right_handed = f.readlines()
+
 DEG2RAD = np.pi / 180
 cams_csv = np.loadtxt(cams_path, dtype='object, float, float, float, float, float, float, float, float, float, float, float, float, float', usecols=(range(0,14)), delimiter=',')
 origin = o3d.geometry.TriangleMesh.create_coordinate_frame()
 print("Reading mesh...")
 mesh = o3d.io.read_triangle_mesh(mesh_path)
-
-test_param = parseCamParam(cams_csv[0])
 
 points = getPoints(cams_csv)
 colors = [[1, 0, 0] for i in range(len(points))]
@@ -79,37 +81,48 @@ vis.add_geometry(mesh)
 vis.add_geometry(origin)
 vis.add_geometry(pointcloud)
 
+# first attempt
 for cam in cams_csv:
     cam_params = parseCamParam(cam)
     cam_center_cx = cam[1]  # world
     cam_center_cy = cam[2]
     cam_center_cz = cam[3]
     trans = np.array([cam_center_cx, cam_center_cy, cam_center_cz])
-    rot_fix = np.array([[0, -1, 0] , [-1, 0, 0] , [0, 0, -1]])
+
+    # experimenting
+    # rot_fix = np.array([[0, -1, 0] , [-1, 0, 0] , [0, 0, -1]])
     # rot_fix_1 = np.array([[-1, 0, 0] , [0, 1, 0] , [0, 0, -1]])
     # rot_fix = np.matmul(rot_fix_0, rot_fix_1)
-    # breakpoint()
-    # extrinsics = np.r_[np.c_[np.eye(3), trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+    # rot_fix = np.array([[1, 1, 1] , [-1, -1, -1] , [-1, -1, -1]])
+    # rot_fix = np.array([[1, 0, 0] , [0, -1, 0] , [0, 0, -1]])
     extrinsics = cam_params.extrinsic
     rot_mat = extrinsics[0:3,0:3] # in camera coordinates
-    rot_mat_fixed = np.matmul(rot_mat, rot_fix)
-    extrinsics = np.r_[np.c_[rot_mat_fixed, trans], np.array([0, 0, 0, 1]).reshape(1, 4)]
+    rot_mat = np.array([rot_mat[0,0:3] , -rot_mat[1,0:3] , -rot_mat[2,0:3]])
+    # rot_mat_fixed = np.matmul(rot_mat, rot_fix)
+    extrinsics = np.r_[np.c_[rot_mat, trans], np.array([0, 0, 0, 1]).reshape(1, 4)]
+    # extrinsics = np.r_[np.c_[rot_mat_fixed, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+    # extrinsics = np.r_[np.c_[rot_mat, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+    # extrinsics = np.r_[np.c_[np.eye(3), trans], np.array([0, 0, 0, 1]).reshape(1,4)]
 
+    # breakpoint()
     cam_vis = o3d.geometry.LineSet.create_camera_visualization(cam_params.intrinsic.width, cam_params.intrinsic.height,
                                                                cam_params.intrinsic.intrinsic_matrix, np.linalg.inv(extrinsics))
+
+    cam_vis_coor_sys = o3d.geometry.TriangleMesh.create_coordinate_frame(origin = trans)
+    cam_vis_coor_sys.rotate(np.eye(3))
+
     vis.add_geometry(cam_vis)
+    vis.add_geometry(cam_vis_coor_sys)
 
-local_params = o3d.io.read_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test.json")
-test_param.intrinsic.intrinsic_matrix = local_params.intrinsic.intrinsic_matrix
+local_params = o3d.io.read_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_initial_position.json") #this was created manually
+vis.get_view_control().convert_from_pinhole_camera_parameters(local_params, allow_arbitrary = False)
 
-vis.get_view_control().convert_from_pinhole_camera_parameters(test_param, allow_arbitrary = False)
-
-o3d.io.write_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test_debug.json", test_param)
+# o3d.io.write_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test_debug.json", test_param)
 
 vis.run()  # user changes the view and press "q" to terminate
 
 # param = vis.get_view_control().convert_to_pinhole_camera_parameters()
-# o3d.io.write_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test.json", param)
+# o3d.io.write_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test_new.json", param)
 
 vis.destroy_window()
 
