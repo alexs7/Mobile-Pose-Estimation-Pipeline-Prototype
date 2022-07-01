@@ -1,52 +1,9 @@
-import time
+import sys
+from os.path import join
 import numpy as np
 import open3d as o3d
 import os
 import cv2
-from matplotlib import pyplot as plt
-from scipy.spatial.transform import Rotation as R
-
-DEG2RAD = np.pi / 180
-
-def eulerToRotMRC(y, p, r): #radians
-    cx = np.cos(r)
-    cy = np.cos(p)
-    cz = np.cos(y)
-    sx = np.sin(r)
-    sy = np.sin(p)
-    sz = np.sin(y)
-    return np.array([[ cx * cz + sx * sy * sz, -cx * sz + cz * sx * sy, -cy * sx],
-                     [ -cy * sz, -cy * cz, -sy ],
-                     [ cx * sy * sz - cz * sx, cx * cz * sy + sx * sz, -cx * cy ]])
-
-def parseCamParam(cam):
-    frame_name = cam[0]
-    print("frame_name: " + frame_name)
-    cam_center_cx = cam[1] #world
-    cam_center_cy = cam[2]
-    cam_center_cz = cam[3]
-    # are in degrees
-    y = cam[4] # heading / yaw, z
-    p = cam[5] # pitch, y
-    r = cam[6] # roll, x
-    img_path = os.path.join(imgs_path, frame_name)
-    img = cv2.imread(img_path)
-    h = img.shape[0]
-    w = img.shape[1]
-    f = 935.3 #cam[7] #fx, fy
-    px = 959.5 #cam[8]
-    py = 539.5 #cam[9]
-    intrinsics = o3d.camera.PinholeCameraIntrinsic(1920, 1080, f, f, px, py)
-    cam_params = o3d.camera.PinholeCameraParameters()
-    cam_params.intrinsic = intrinsics
-    # rotm = o3d.geometry.Geometry3D.get_rotation_matrix_from_zyx(rotation = [y * DEG2RAD, p * DEG2RAD, r * DEG2RAD])
-    # rotm = R.from_euler('zyx', [y * DEG2RAD, p * DEG2RAD, r * DEG2RAD], degrees=False).as_dcm()
-    rotm = eulerToRotMRC(y * DEG2RAD, p * DEG2RAD, r * DEG2RAD)
-    # rotm = np.eye(3)
-    trans = [cam_center_cx, cam_center_cy, cam_center_cz]
-    extrinsics = np.r_[np.c_[rotm, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
-    cam_params.extrinsic = extrinsics
-    return cam_params
 
 def getPoints(cams_csv):
     points = np.empty([0, 3])
@@ -82,15 +39,21 @@ def create_cams_from_bundler(bundler_data, cams_csv):
         bundler_cams.append(cam_params)
     return bundler_cams
 
-def custom_draw_geometry_with_camera_trajectory(mesh, trajectory):
+def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     custom_draw_geometry_with_camera_trajectory.index = -1
     custom_draw_geometry_with_camera_trajectory.trajectory = trajectory
     custom_draw_geometry_with_camera_trajectory.vis = o3d.visualization.Visualizer()
 
-    if not os.path.exists("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/image/"):
-        os.makedirs("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/image/")
-    if not os.path.exists("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/depth/"):
-        os.makedirs("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/depth/")
+    image_path = os.path.join(base_path, "image/")
+    depth_path = os.path.join(base_path, "depth/")
+    poses_path = os.path.join(base_path, "poses/")
+
+    if not os.path.exists(image_path):
+        os.makedirs(image_path)
+    if not os.path.exists(depth_path):
+        os.makedirs(depth_path)
+    if not os.path.exists(poses_path):
+        os.makedirs(poses_path)
 
     def move_forward(vis):
         # This function is called within the o3d.visualization.Visualizer::run() loop
@@ -102,15 +65,19 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory):
         # 4. (Re-render)
         ctr = vis.get_view_control()
         glb = custom_draw_geometry_with_camera_trajectory
-        breakpoint()
         if glb.index >= 0:
             print("Capturing image {:05d}..".format(glb.index))
-            vis.capture_depth_image("cyens_data/depth/{:05d}.png".format(glb.index), False)
-            vis.capture_screen_image("cyens_data/image/{:05d}.png".format(glb.index), False)
+            captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
+            captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
+            vis.capture_depth_image(captured_depth_path, False)
+            vis.capture_screen_image(captured_image_path, False)
         glb.index = glb.index + 1
         if glb.index < len(glb.trajectory.parameters):
-            ctr.convert_from_pinhole_camera_parameters(
-                glb.trajectory.parameters[glb.index])
+            print("Saving pose {:05d}..".format(glb.index))
+            pose = glb.trajectory.parameters[glb.index] # camera parameters
+            ctr.convert_from_pinhole_camera_parameters(pose)
+            captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
+            o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
         else:
             custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
         return False
@@ -118,17 +85,17 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory):
     vis = custom_draw_geometry_with_camera_trajectory.vis
     vis.create_window()
     vis.add_geometry(mesh)
-    # vis.get_render_option().load_from_json("../../test_data/renderoption.json")
     vis.register_animation_callback(move_forward)
     vis.run()
     vis.destroy_window()
 
+base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
+
 print("Loading objects...")
-cams_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv"
-mesh_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx"
-imgs_path = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/IMAGES/C0002 frames"
-bundler_file_path_right_handed = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/BUNDLER/1st_MODEL_-_4k_Video_Photogrammetry.out"
-bundler_file_path_left_handed = "/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/1st MODEL - FILES/BUNDLER/Positive_1st_MODEL_-_4k_Video_Photogrammetry.out"
+cams_path = os.path.join(base_path, "1st MODEL - FILES/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv")
+mesh_path = os.path.join(base_path, "1st MODEL - FILES/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx")
+imgs_path = os.path.join(base_path, "IMAGES/C0002 frames")
+bundler_file_path_right_handed = os.path.join(base_path, "1st MODEL - FILES/BUNDLER/1st_MODEL_-_4k_Video_Photogrammetry.out")
 
 # switch file here
 with open(bundler_file_path_right_handed) as f:
@@ -137,12 +104,10 @@ with open(bundler_file_path_right_handed) as f:
 cams_csv = np.loadtxt(cams_path, dtype='object, float, float, float, float, float, float, float, float, float, float, float, float, float', usecols=(range(0,14)), delimiter=',')
 cams_bundler = create_cams_from_bundler(bundler_file_right_handed, cams_csv)
 
-origin = o3d.geometry.TriangleMesh.create_coordinate_frame()
 print("Reading mesh...")
 mesh = o3d.io.read_triangle_mesh(mesh_path)
 
 print("Creating trajectory...")
-
 trajectory_cams = []
 for cam in cams_bundler:
     extrinsics = cam.extrinsic #in camera coordinates
@@ -177,6 +142,6 @@ trajectory = o3d.camera.PinholeCameraTrajectory()
 trajectory.parameters = trajectory_cams
 
 print("Traversing trajectory...")
-custom_draw_geometry_with_camera_trajectory(mesh, trajectory)
+custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path)
 
 print("Done!...")
