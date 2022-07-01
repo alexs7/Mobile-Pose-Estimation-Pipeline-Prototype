@@ -112,6 +112,7 @@ vis.add_geometry(origin)
 vis.add_geometry(pointcloud)
 
 #  second attempt bundler poses - right handed
+trajectory_cams = []
 for cam in cams_bundler:
     extrinsics = cam.extrinsic #in camera coordinates
 
@@ -140,6 +141,11 @@ for cam in cams_bundler:
 
     vis.add_geometry(cam_vis)
     vis.add_geometry(cam_vis_coor_sys)
+
+    trajectory_cam = o3d.camera.PinholeCameraParameters()
+    trajectory_cam.intrinsic = cam.intrinsic
+    trajectory_cam.extrinsic = extrinsics
+    trajectory_cams.append(trajectory_cam)
 
 # first attempt
 # for cam in cams_csv:
@@ -177,6 +183,8 @@ for cam in cams_bundler:
 local_params = o3d.io.read_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_initial_position.json") #this was created manually
 vis.get_view_control().convert_from_pinhole_camera_parameters(local_params, allow_arbitrary = False)
 
+
+vis.get_view_control().convert_from_pinhole_camera_parameters(trajectory_cam, allow_arbitrary = False)
 # o3d.io.write_pinhole_camera_parameters("/Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/camera_test_debug.json", test_param)
 
 vis.run()  # user changes the view and press "q" to terminate
