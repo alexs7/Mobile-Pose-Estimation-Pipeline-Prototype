@@ -79,13 +79,16 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
             vis.capture_depth_image(captured_depth_path, False)
             vis.capture_screen_image(captured_image_path, False)
         glb.index = glb.index + 1
+        print("glb.index " + str(glb.index))
         if glb.index < len(glb.trajectory.parameters):
+            print("in if")
             print("Saving pose {:05d}..".format(glb.index))
             pose = glb.trajectory.parameters[glb.index] # camera parameters
             ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
             captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
             o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
         else:
+            print("in else")
             custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
         return False
 
