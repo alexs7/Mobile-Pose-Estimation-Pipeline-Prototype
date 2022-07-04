@@ -95,10 +95,10 @@ base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cye
 start = time.time()
 
 print("Loading objects...")
-cams_path = os.path.join(base_path, "model_files/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv")
-mesh_path = os.path.join(base_path, "model_files/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx")
-imgs_path = os.path.join(base_path, "IMAGES/C0002 frames")
-bundler_file_path_right_handed = os.path.join(base_path, "1st MODEL - FILES/BUNDLER/1st_MODEL_-_4k_Video_Photogrammetry.out")
+cams_path = os.path.join(base_path, "model_files/Internal_ExternalCameraParameters/Internal_external.csv")
+mesh_path = os.path.join(base_path, "model_files/EXPORT_Mesh/model.fbx")
+imgs_path = os.path.join(base_path, "IMAGES/all")
+bundler_file_path_right_handed = os.path.join(base_path, "model_files/BUNDLER/bundler_poses_negative_z_axis_right_handed.out")
 
 # switch file here
 with open(bundler_file_path_right_handed) as f:
