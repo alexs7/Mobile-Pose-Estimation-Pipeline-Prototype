@@ -97,7 +97,9 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     vis.add_geometry(mesh)
     vis.register_animation_callback(move_forward)
     vis.run()
+    vis.close()
     vis.destroy_window()
+
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
 
@@ -160,3 +162,5 @@ print("Done!...")
 end = time.time()
 elapsed_time = end - start
 print("Time taken (s): " + str(elapsed_time))
+
+exit()
