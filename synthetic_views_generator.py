@@ -62,33 +62,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     if not os.path.exists(poses_path):
         os.makedirs(poses_path)
 
-    # def move_forward(vis):
-    #     # This function is called within the o3d.visualization.Visualizer::run() loop
-    #     # The run loop calls the function, then re-render
-    #     # So the sequence in this function is to:
-    #     # 1. Capture frame
-    #     # 2. index++, check ending criteria
-    #     # 3. Set camera
-    #     # 4. (Re-render)
-    #     ctr = vis.get_view_control()
-    #     glb = custom_draw_geometry_with_camera_trajectory
-    #     if glb.index >= 0: #this will not be executed at first (glb.index = -1)
-    #         print("Capturing image {:05d}..".format(glb.index))
-    #         captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
-    #         captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
-    #         vis.capture_depth_image(captured_depth_path, False)
-    #         vis.capture_screen_image(captured_image_path, False)
-    #     glb.index = glb.index + 1
-    #     if glb.index < len(glb.trajectory.parameters):
-    #         print("Saving pose {:05d}..".format(glb.index))
-    #         pose = glb.trajectory.parameters[glb.index] # camera parameters
-    #         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
-    #         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
-    #         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
-    #     else:
-    #         custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
-    #     return False
-
     vis.create_window(width=1920, height=1080)
     vis.add_geometry(mesh)
 
@@ -96,13 +69,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         pose = trajectory.parameters[i]
         ctr = vis.get_view_control()
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
-
-        vis.update_geometry(mesh)  # ?
         vis.poll_events()
         vis.update_renderer()
-
-        if(i==0):
-            breakpoint()
 
         captured_image_path = os.path.join(image_path, "{:05d}.png".format(i))
         captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(i))
@@ -110,8 +78,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         vis.capture_screen_image(captured_image_path, False)
         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
-
-
 
     vis.destroy_window()
 
