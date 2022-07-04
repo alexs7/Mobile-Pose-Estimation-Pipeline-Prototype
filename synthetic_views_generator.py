@@ -97,6 +97,10 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         ctr = vis.get_view_control()
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
 
+        vis.update_geometry(mesh)  # ?
+        vis.poll_events()
+        vis.update_renderer()
+
         if(i==0):
             breakpoint()
 
@@ -107,9 +111,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
 
-        vis.update_geometry(mesh) # ?
-        vis.poll_events()
-        vis.update_renderer()
+
 
     vis.destroy_window()
 
