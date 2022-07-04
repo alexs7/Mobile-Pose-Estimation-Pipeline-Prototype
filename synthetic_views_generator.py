@@ -97,6 +97,9 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         ctr = vis.get_view_control()
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
 
+        if(i==0):
+            breakpoint()
+
         captured_image_path = os.path.join(image_path, "{:05d}.png".format(i))
         captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(i))
         vis.capture_depth_image(captured_depth_path, False)
@@ -108,7 +111,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         vis.poll_events()
         vis.update_renderer()
 
-    vis.run()
     vis.destroy_window()
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
