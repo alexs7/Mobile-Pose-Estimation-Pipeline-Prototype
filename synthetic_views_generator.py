@@ -50,7 +50,6 @@ def create_cams_from_bundler(bundler_data, cams_csv):
 
 def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     vis = o3d.visualization.Visualizer()
-    ctr = vis.get_view_control()
 
     image_path = os.path.join(base_path, "images/")
     depth_path = os.path.join(base_path, "depths/")
@@ -90,19 +89,19 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     #         custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
     #     return False
 
-    vis.create_window(width=1920, height=1080, visible=False)
+    vis.create_window(width=1920, height=1080)
     vis.add_geometry(mesh)
 
     for i in range(len(trajectory.parameters)):
-        breakpoint()
-        pose = cam_params
+        pose = trajectory.parameters[i]
+        ctr = vis.get_view_control()
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
 
-        captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
-        captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
+        captured_image_path = os.path.join(image_path, "{:05d}.png".format(i))
+        captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(i))
         vis.capture_depth_image(captured_depth_path, False)
         vis.capture_screen_image(captured_image_path, False)
-        captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
+        captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
 
         vis.update_geometry(mesh) # ?
