@@ -9,6 +9,8 @@ import cv2
 WIDTH = 1920
 HEIGHT = 1080
 
+o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Info)
+
 def getPoints(cams_csv):
     points = np.empty([0, 3])
     for cam in cams_csv:
@@ -97,8 +99,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     vis.add_geometry(mesh)
     vis.register_animation_callback(move_forward)
     vis.run()
-    vis.close()
     vis.destroy_window()
+    print("window destroyed")
 
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
