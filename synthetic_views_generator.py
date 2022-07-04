@@ -49,9 +49,8 @@ def create_cams_from_bundler(bundler_data, cams_csv):
     return bundler_cams
 
 def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
-    custom_draw_geometry_with_camera_trajectory.index = -1
-    custom_draw_geometry_with_camera_trajectory.trajectory = trajectory
-    custom_draw_geometry_with_camera_trajectory.vis = o3d.visualization.Visualizer()
+    vis = o3d.visualization.Visualizer()
+    ctr = vis.get_view_control()
 
     image_path = os.path.join(base_path, "images/")
     depth_path = os.path.join(base_path, "depths/")
@@ -64,37 +63,52 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     if not os.path.exists(poses_path):
         os.makedirs(poses_path)
 
-    def move_forward(vis):
-        # This function is called within the o3d.visualization.Visualizer::run() loop
-        # The run loop calls the function, then re-render
-        # So the sequence in this function is to:
-        # 1. Capture frame
-        # 2. index++, check ending criteria
-        # 3. Set camera
-        # 4. (Re-render)
-        ctr = vis.get_view_control()
-        glb = custom_draw_geometry_with_camera_trajectory
-        if glb.index >= 0: #this will not be executed at first (glb.index = -1)
-            print("Capturing image {:05d}..".format(glb.index))
-            captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
-            captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
-            vis.capture_depth_image(captured_depth_path, False)
-            vis.capture_screen_image(captured_image_path, False)
-        glb.index = glb.index + 1
-        if glb.index < len(glb.trajectory.parameters):
-            print("Saving pose {:05d}..".format(glb.index))
-            pose = glb.trajectory.parameters[glb.index] # camera parameters
-            ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
-            captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
-            o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
-        else:
-            custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
-        return False
+    # def move_forward(vis):
+    #     # This function is called within the o3d.visualization.Visualizer::run() loop
+    #     # The run loop calls the function, then re-render
+    #     # So the sequence in this function is to:
+    #     # 1. Capture frame
+    #     # 2. index++, check ending criteria
+    #     # 3. Set camera
+    #     # 4. (Re-render)
+    #     ctr = vis.get_view_control()
+    #     glb = custom_draw_geometry_with_camera_trajectory
+    #     if glb.index >= 0: #this will not be executed at first (glb.index = -1)
+    #         print("Capturing image {:05d}..".format(glb.index))
+    #         captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
+    #         captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
+    #         vis.capture_depth_image(captured_depth_path, False)
+    #         vis.capture_screen_image(captured_image_path, False)
+    #     glb.index = glb.index + 1
+    #     if glb.index < len(glb.trajectory.parameters):
+    #         print("Saving pose {:05d}..".format(glb.index))
+    #         pose = glb.trajectory.parameters[glb.index] # camera parameters
+    #         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+    #         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
+    #         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
+    #     else:
+    #         custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
+    #     return False
 
-    vis = custom_draw_geometry_with_camera_trajectory.vis
     vis.create_window(width=1920, height=1080, visible=False)
     vis.add_geometry(mesh)
-    vis.register_animation_callback(move_forward)
+
+    for i in range(trajectory.parameters):
+        breakpoint()
+        pose = cam_params
+        ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+
+        captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
+        captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
+        vis.capture_depth_image(captured_depth_path, False)
+        vis.capture_screen_image(captured_image_path, False)
+        captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
+        o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
+
+        vis.update_geometry(mesh) # ?
+        vis.poll_events()
+        vis.update_renderer()
+
     vis.run()
     vis.destroy_window()
 
