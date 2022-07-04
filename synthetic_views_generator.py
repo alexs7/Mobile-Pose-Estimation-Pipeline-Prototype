@@ -87,18 +87,15 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
             ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
             captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
             o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
-            vis.update_geometry(mesh)
-            vis.poll_events()
-            vis.update_renderer()
         else:
             custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
         return False
 
     vis = custom_draw_geometry_with_camera_trajectory.vis
-    vis.create_window(width=1920, height=1080)
+    vis.create_window(width=1920, height=1080, visible=False)
     vis.add_geometry(mesh)
     vis.register_animation_callback(move_forward)
-    # vis.run()
+    vis.run()
     vis.destroy_window()
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
