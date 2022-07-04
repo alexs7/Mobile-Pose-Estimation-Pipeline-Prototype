@@ -74,23 +74,23 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
         # 4. (Re-render)
         ctr = vis.get_view_control()
         glb = custom_draw_geometry_with_camera_trajectory
-        if glb.index >= 0:
+        if glb.index >= 0: #this will not be executed at first (glb.index = -1)
             print("Capturing image {:05d}..".format(glb.index))
             captured_image_path = os.path.join(image_path, "{:05d}.png".format(glb.index))
             captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(glb.index))
             vis.capture_depth_image(captured_depth_path, False)
             vis.capture_screen_image(captured_image_path, False)
         glb.index = glb.index + 1
-        print("glb.index " + str(glb.index))
         if glb.index < len(glb.trajectory.parameters):
-            print("in if")
             print("Saving pose {:05d}..".format(glb.index))
             pose = glb.trajectory.parameters[glb.index] # camera parameters
             ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
             captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(glb.index))
             o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose)
+            vis.update_geometry(mesh)
+            vis.poll_events()
+            vis.update_renderer()
         else:
-            print("in else")
             custom_draw_geometry_with_camera_trajectory.vis.register_animation_callback(None)
         return False
 
@@ -98,10 +98,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     vis.create_window(width=1920, height=1080)
     vis.add_geometry(mesh)
     vis.register_animation_callback(move_forward)
-    vis.run()
+    # vis.run()
     vis.destroy_window()
-    print("window destroyed")
-
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
 
