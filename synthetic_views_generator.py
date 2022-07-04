@@ -93,7 +93,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     vis.create_window(width=1920, height=1080, visible=False)
     vis.add_geometry(mesh)
 
-    for i in range(trajectory.parameters):
+    for i in range(len(trajectory.parameters)):
         breakpoint()
         pose = cam_params
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
