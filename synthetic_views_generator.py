@@ -1,4 +1,5 @@
 import sys
+import time
 from os.path import join
 import numpy as np
 import open3d as o3d
@@ -91,9 +92,11 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
 
+start = time.time()
+
 print("Loading objects...")
-cams_path = os.path.join(base_path, "1st MODEL - FILES/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv")
-mesh_path = os.path.join(base_path, "1st MODEL - FILES/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx")
+cams_path = os.path.join(base_path, "model_files/Internal_ExternalCameraParameters/Internal_external_1st_Model.csv")
+mesh_path = os.path.join(base_path, "model_files/EXPORT_Mesh/1st_MODEL_-_4k_Video_Photogrammetry.fbx")
 imgs_path = os.path.join(base_path, "IMAGES/C0002 frames")
 bundler_file_path_right_handed = os.path.join(base_path, "1st MODEL - FILES/BUNDLER/1st_MODEL_-_4k_Video_Photogrammetry.out")
 
@@ -145,3 +148,6 @@ print("Traversing trajectory...")
 custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path)
 
 print("Done!...")
+end = time.time()
+elapsed_time = end - start
+print("Time taken (s): " + str(elapsed_time))
