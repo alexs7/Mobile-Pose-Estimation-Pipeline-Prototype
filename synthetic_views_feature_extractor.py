@@ -16,10 +16,22 @@ depths_path = os.path.join(base_path, "depths/")
 image_features_path = os.path.join(base_path, "images_features/")
 no_images = len(glob.glob(os.path.join(images_path,"*.png")))
 
+sift = cv2.SIFT_create()
+
 if not os.path.exists(image_features_path):
     os.makedirs(image_features_path)
 
-for i in range(len(no_images)):
+for i in range(no_images):
+    image_path = os.path.join(images_path, "{:05d}.png".format(i))
+    depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
+
+    image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    depth = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
+
+    mask = np.copy(depth)
+    mask[np.where(mask > 0)] = 255
+
+    kp, des = sift.detectAndCompute(image, mask = mask)
     breakpoint()
 
 for filename in os.scandir(depths_path):
