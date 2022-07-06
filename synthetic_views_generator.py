@@ -51,7 +51,7 @@ def create_cams_from_bundler(bundler_data, cams_csv):
 def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
     vis = o3d.visualization.Visualizer()
 
-    image_path = os.path.join(base_path, "images/")
+    image_path = os.path.join(base_path, "synth_images/")
     depth_path = os.path.join(base_path, "depths/")
     poses_path = os.path.join(base_path, "poses/")
 
