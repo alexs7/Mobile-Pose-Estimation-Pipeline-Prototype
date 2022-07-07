@@ -28,7 +28,7 @@ search_params = dict(checks=50)  # or pass empty dictionary
 matcher = cv2.FlannBasedMatcher(index_params, search_params)
 ratio_thresh = 0.7
 
-test_index = 1
+test_index = 95
 
 real_image_path = os.path.join(images_path, "frame{:06}.png".format(test_index))
 real_img = cv2.imread(real_image_path, cv2.IMREAD_GRAYSCALE)
@@ -97,10 +97,10 @@ pointcloud.colors = o3d.utility.Vector3dVector(colors)
 
 vis = o3d.visualization.Visualizer()
 vis.create_window()
-ctr = vis.get_view_control()
-ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
 vis.add_geometry(mesh)
 vis.add_geometry(pointcloud)
+ctr = vis.get_view_control()
+ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
 vis.run()
 vis.destroy_window()
 
