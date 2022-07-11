@@ -90,7 +90,7 @@ point_world_coords = np.empty([0,3])
     # point_world_coords = np.r_[point_world_coords, point_world_coord.reshape([1,4])]
 
 pointcloud = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_map), pose.intrinsic, extrinsics)
-colors = [[1, 0, 0] for i in range(np.asarray(pointcloud.points).shape[0])]
+colors = [[0.5, 0.5, 0] for i in range(np.asarray(pointcloud.points).shape[0])]
 # pointcloud = o3d.geometry.PointCloud()
 # pointcloud.points = o3d.utility.Vector3dVector(points)
 pointcloud.colors = o3d.utility.Vector3dVector(colors)
