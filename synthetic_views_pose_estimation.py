@@ -8,6 +8,8 @@ import os
 import cv2
 from random import *
 
+depth_scale = 1000.0 #Open3D default
+
 start = time.time()
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
@@ -19,7 +21,7 @@ poses_path = os.path.join(base_path, "poses/")
 synth_image_features_path = os.path.join(base_path, "images_features/")
 no_images = len(glob.glob(os.path.join(synth_images_path, "*.png")))
 
-print("Creating featires dir...") # will store 2D - 3D - SIFT in a numpy .npy file for each image
+print("Creating features dir...") # will store 2D - 3D - SIFT in a numpy .npy file for each image
 if not os.path.exists(synth_image_features_path):
     os.makedirs(synth_image_features_path)
 
@@ -34,6 +36,7 @@ sift = cv2.SIFT_create()
 # ratio_thresh = 0.7
 
 test_index = randint(0, no_images)
+print("Random index: " + str(test_index))
 
 # real_image_path = os.path.join(images_path, "frame{:06}.png".format(test_index))
 # real_img = cv2.imread(real_image_path, cv2.IMREAD_GRAYSCALE)
@@ -46,7 +49,7 @@ depth_map = cv2.imread(depth_path, cv2.CV_16U)
 depth_map_for_mask = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
 
 pose_path = os.path.join(poses_path, "{:05d}.json".format(test_index))
-pose = o3d.io.read_pinhole_camera_parameters(pose_path)
+pose = o3d.io.read_pinhole_camera_parameters(pose_path) # load the pose which is in camera coordinates
 
 mask = np.copy(depth_map_for_mask) #this mask will be used for OpenCV
 mask[np.where(mask > 0)] = 255
@@ -68,17 +71,38 @@ cx = intrinsics[0,2]
 cy = intrinsics[1,2]
 extrinsics = pose.extrinsic
 
-pointcloud = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_map), pose.intrinsic, extrinsics)
+print("Back-projecting points...")
+point_world_coords = np.empty([0,3])
+for keypoint in kps_train:
+    xy = np.round(keypoint.pt).astype(int) # openCV convention (x,y)
+    # numpy convention
+    row = xy[1]
+    col = xy[0]
+    depth = depth_map[row, col]
+    z = depth / depth_scale
+    x = (xy[0] - cx) * z / fx
+    y = (xy[1] - cy) * z / fy
+
+    point_camera_coordinates = np.array([x, y, z , 1]).reshape([4,1])
+    point_world_coordinates = np.linalg.inv(extrinsics).dot(point_camera_coordinates)
+    point_world_coordinates = point_world_coordinates[0:3,:]
+    point_world_coords = np.r_[point_world_coords, point_world_coordinates.reshape([1, 3])]
+
+# TODO: render point-cloud also below
+pointcloud_verification = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_map), pose.intrinsic, extrinsics)
+colors = [[0.5, 0, 0] for i in range(np.asarray(pointcloud_verification.points).shape[0])]
+pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+
+pointcloud = o3d.geometry.PointCloud()
+pointcloud.points = o3d.utility.Vector3dVector(point_world_coords)
 colors = [[0.5, 0.5, 0.6] for i in range(np.asarray(pointcloud.points).shape[0])]
 pointcloud.colors = o3d.utility.Vector3dVector(colors)
-
-# for verification
-breakpoint()
 
 vis = o3d.visualization.Visualizer()
 vis.create_window()
 vis.add_geometry(mesh)
 vis.add_geometry(pointcloud)
+# vis.add_geometry(pointcloud_verification)
 ctr = vis.get_view_control()
 ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
 vis.run()
