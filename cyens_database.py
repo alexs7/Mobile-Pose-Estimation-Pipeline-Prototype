@@ -31,12 +31,17 @@ class CYENSDatabase(sqlite3.Connection):
         self.executescript(CREATE_DATA_TABLE)
 
     def add_feature_data(self, image_index, values):
-        values = np.ascontiguousarray(values, np.uint8)
+        values = np.ascontiguousarray(values, np.float64)
         self.execute(
             "INSERT INTO image_data VALUES (?, ?)",
             (image_index,) + (self.array_to_blob(values),))
         self.commit()
 
-    def get_feature_data(self, image_index):
-        return self.blob_to_array(self.execute("SELECT data FROM descriptors WHERE image_index = " + "'" + str(image_index) + "'"))
+    def get_feature_data(self, image_index, data_length):
+        res = self.execute("SELECT data FROM image_data WHERE image_index = " + "'" + str(image_index) + "'")
+        res = res.fetchone()[0]
+        res = self.blob_to_array(res, np.float64)
+        res_rows = int(res.shape[0] / data_length)
+        res = res.reshape([res_rows, data_length])
+        return res
 
