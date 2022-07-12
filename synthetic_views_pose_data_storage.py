@@ -62,7 +62,7 @@ for i in range(no_images):
         row = xy[1]
         col = xy[0]
         depth = depth_map[row, col]
-        z = depth / depth_scale
+        z = depth / depth_scale # if you use vis.capture_depth_float_buffer() to get the depth do not divide by depth_scale
         x = (xy[0] - cx) * z / fx
         y = (xy[1] - cy) * z / fy
 

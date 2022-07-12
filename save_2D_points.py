@@ -16,6 +16,6 @@ def save_projected_points(points_3D, keypoints_2D, est_pose_query, K, real_img, 
         y_real = int(keypoints_2D[i][1])
         center = (x, y)
         center_real = (x_real, y_real)
-        cv2.circle(image, center, 8, blue, -1)
-        cv2.circle(image, center_real, 12, green, -1)
+        cv2.circle(image, center_real, 14, green, -1)
+        cv2.circle(image, center, 12, blue, -1)
     cv2.imwrite(verification_image_path, image, )

@@ -30,7 +30,7 @@ mesh = o3d.io.read_triangle_mesh(mesh_path)
 
 sift = cv2.SIFT_create()
 
-test_index = randint(0, no_images)
+test_index = int(sys.argv[2]) #randint(0, no_images)
 print("Random index: " + str(test_index))
 
 synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(test_index))

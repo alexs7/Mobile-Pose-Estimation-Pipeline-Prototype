@@ -33,7 +33,7 @@ db = CYENSDatabase.connect(database_path)
 
 sift = cv2.SIFT_create()
 
-test_index = 20 #randint(0, no_images)
+test_index = randint(0, no_images)
 
 print("Estimating a pose for image with index: " + str(test_index))
 
@@ -68,23 +68,11 @@ keypoints_2D = np.array([good_query_keypoint.pt for good_query_keypoint in good_
 points_3D = database_features[[good_match.trainIdx for good_match in good_matches]][:, 2:5]
 
 _, rvec, tvec, _ = cv2.solvePnPRansac(points_3D, keypoints_2D, pose.intrinsic.intrinsic_matrix, np.zeros((5, 1)),
-                                      iterationsCount = 500, confidence = 0.99, flags = cv2.SOLVEPNP_EPNP)
+                                      iterationsCount = 3000, confidence = 0.99, flags = cv2.SOLVEPNP_P3P)
 
 rot_matrix = cv2.Rodrigues(rvec)[0] #second value is the jacobian
 est_pose_query = np.c_[rot_matrix, tvec]
 est_pose_query = np.r_[est_pose_query, [np.array([0, 0, 0, 1])]]
-
-points_3D = np.hstack((points_3D, np.ones((points_3D.shape[0], 1))))
-points = pose.intrinsic.intrinsic_matrix.dot(est_pose_query.dot(points_3D.transpose())[0:3,:])
-points = points // points[2,:]
-points = points.transpose()
-
-# print(points[0])
-# print(keypoints_2D[0])
-# print()
-# print(points[1])
-# print(keypoints_2D[1])
-# breakpoint()
 
 print("Projecting points ")
 

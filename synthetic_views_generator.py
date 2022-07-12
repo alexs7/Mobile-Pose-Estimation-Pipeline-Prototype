@@ -74,7 +74,23 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path):
 
         captured_image_path = os.path.join(image_path, "{:05d}.png".format(i))
         captured_depth_path = os.path.join(depth_path, "{:05d}.png".format(i))
+
         vis.capture_depth_image(captured_depth_path, False)
+        # bar = vis.capture_depth_float_buffer()
+
+        # TODO: Check the float buffer and see if you can use that
+        # capture_depth_point_cloud() seems to be the most accurate one so far ?
+        print("Saving Point Cloud..")
+        vis.capture_depth_point_cloud(os.path.join(base_path, "pointcloud.pcd" ), convert_to_world_coordinate=True)
+
+        print("Loading Point Cloud..")
+        pcd = o3d.io.read_point_cloud("/Users/alex/Projects/CYENS/andreas_models/Model 2 - Old Doorway - Near Green Line/pointcloud.pcd")
+        colors = [[0.5, 0, 0] for i in range(np.asarray(pcd.points).shape[0])]
+        pcd.colors = o3d.utility.Vector3dVector(colors)
+        vis.add_geometry(pcd)
+        vis.update_renderer()
+        breakpoint()
+
         vis.capture_screen_image(captured_image_path, False)
         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose) # save the pose in camera coordinates
