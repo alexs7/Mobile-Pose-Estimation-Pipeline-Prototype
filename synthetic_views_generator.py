@@ -197,7 +197,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
             x_world = point_world_coordinates[0,0]
             y_world = point_world_coordinates[1,0]
             z_world = point_world_coordinates[2,0]
-            data_row = np.append(np.array([xy[0], xy[1], x_world, y_world, z_world]), descriptor , depth).reshape([1, row_length])
+            data_row = np.append(np.array([xy[0], xy[1], x_world, y_world, z_world, depth]), descriptor).reshape([1, row_length])
             data_rows = np.r_[data_rows, data_row]
 
         db.add_feature_data(i, data_rows)
