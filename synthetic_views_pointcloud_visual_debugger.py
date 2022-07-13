@@ -74,7 +74,7 @@ for keypoint in kps_train:
 
 # TODO: render point-cloud also below for verification
 pointcloud_verification = o3d.geometry.PointCloud.create_from_depth_image(o3d.geometry.Image(depth_map), pose.intrinsic, extrinsics)
-colors = [[0.5, 0, 0] for i in range(np.asarray(pointcloud_verification.points).shape[0])]
+colors = [[0, 0.5, 0] for i in range(np.asarray(pointcloud_verification.points).shape[0])]
 pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
 
 pointcloud = o3d.geometry.PointCloud()
@@ -84,11 +84,23 @@ pointcloud.colors = o3d.utility.Vector3dVector(colors)
 
 vis = o3d.visualization.Visualizer()
 vis.create_window()
-vis.add_geometry(mesh)
+# vis.add_geometry(mesh)
 vis.add_geometry(pointcloud)
-# vis.add_geometry(pointcloud_verification)
+vis.add_geometry(pointcloud_verification)
+
+
+print("Saving Point Cloud..")
+vis.capture_depth_point_cloud(os.path.join(base_path, "pointcloud.pcd" ), convert_to_world_coordinate=True)
+
+print("Loading Point Cloud..")
+pcd = o3d.io.read_point_cloud("/Users/alex/Projects/CYENS/andreas_models/Model 2 - Old Doorway - Near Green Line/pointcloud.pcd")
+colors = [[0.5, 0, 0] for i in range(np.asarray(pcd.points).shape[0])]
+pcd.colors = o3d.utility.Vector3dVector(colors)
+vis.add_geometry(pcd)
+
 ctr = vis.get_view_control()
 ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+
 vis.run()
 vis.destroy_window()
 

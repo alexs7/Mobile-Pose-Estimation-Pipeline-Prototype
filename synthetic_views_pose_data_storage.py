@@ -66,6 +66,7 @@ for i in range(no_images):
         x = (xy[0] - cx) * z / fx
         y = (xy[1] - cy) * z / fy
 
+        # the points here x,y,z are in camera coordinates
         point_camera_coordinates = np.array([x, y, z , 1]).reshape([4,1])
         point_world_coordinates = np.linalg.inv(extrinsics).dot(point_camera_coordinates)
         point_world_coordinates = point_world_coordinates[0:3,:]
