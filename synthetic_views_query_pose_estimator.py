@@ -11,7 +11,7 @@ from cyens_database import CYENSDatabase
 from save_2D_points import save_projected_points
 
 depth_scale = 1000.0 #Open3D default
-data_length = 133
+row_length = 134
 
 start = time.time()
 
@@ -47,8 +47,12 @@ pose_path = os.path.join(poses_path, "{:05d}.json".format(test_index))
 pose = o3d.io.read_pinhole_camera_parameters(pose_path)
 
 kps_query, descs_query = sift.detectAndCompute(real_img, None)
-database_features = db.get_feature_data(test_index, data_length)
-descs_train = database_features[:,5:data_length].astype(np.float32)
+database_features = db.get_feature_data(test_index, row_length)
+descs_train = database_features[:, 5:row_length].astype(np.float32)
+
+keypoint_image = cv2.drawKeypoints(real_img, kps_query, 0, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
+keypoint_image_path = os.path.join(verifications_path, "query_keypoints_frame{:06}.png".format(test_index))
+cv2.imwrite(keypoint_image_path, keypoint_image)
 
 FLANN_INDEX_KDTREE = 1 #https://docs.opencv.org/3.4.0/dc/d8c/namespacecvflann.html
 index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
