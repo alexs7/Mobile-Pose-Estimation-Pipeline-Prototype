@@ -2,13 +2,14 @@ import cv2
 import numpy as np
 
 def save_projected_points(points_3D, keypoints_2D, est_pose_query, K, real_img, verification_image_path):
-    green = (0, 255, 0)
-    blue = (255, 0, 0)
+    green = (0, 255, 0) # for the good matches keypoints
+    blue = (255, 0, 0) # for the projected 3D points
     image = real_img.copy()
     points_3D = np.hstack((points_3D, np.ones((points_3D.shape[0], 1))))
     points = K.dot(est_pose_query.dot(points_3D.transpose())[0:3,:])
     points = points // points[2,:]
     points = points.transpose()
+    
     for i in range(len(points)):
         x = int(points[i][0])
         y = int(points[i][1])

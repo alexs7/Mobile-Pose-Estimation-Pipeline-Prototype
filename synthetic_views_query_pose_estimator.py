@@ -48,7 +48,7 @@ pose = o3d.io.read_pinhole_camera_parameters(pose_path)
 
 kps_query, descs_query = sift.detectAndCompute(real_img, None)
 database_features = db.get_feature_data(test_index, row_length)
-descs_train = database_features[:, 5:row_length].astype(np.float32)
+descs_train = database_features[:, -128:].astype(np.float32) # last 128 elements (SIFT)
 
 keypoint_image = cv2.drawKeypoints(real_img, kps_query, 0, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
 keypoint_image_path = os.path.join(verifications_path, "query_keypoints_frame{:06}.png".format(test_index))
