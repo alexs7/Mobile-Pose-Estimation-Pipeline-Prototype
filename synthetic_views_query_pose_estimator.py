@@ -33,6 +33,11 @@ print("Connecting to database...")
 db = CYENSDatabase.connect(database_path)
 
 sift = cv2.SIFT_create()
+FLANN_INDEX_KDTREE = 1 #https://docs.opencv.org/3.4.0/dc/d8c/namespacecvflann.html
+index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
+search_params = dict(checks=50)  # or pass empty dictionary
+matcher = cv2.FlannBasedMatcher(index_params, search_params)
+ratio_thresh = 0.7
 
 query_frame = sys.argv[2]
 synth_no = int(sys.argv[3]) #150, 12 ...
@@ -49,6 +54,32 @@ pose_path = os.path.join(poses_path, "{:05d}.json".format(synth_no))
 pose = o3d.io.read_pinhole_camera_parameters(pose_path)
 
 kps_query, descs_query = sift.detectAndCompute(query_image, None)
+kps_synth, descs_synth = sift.detectAndCompute(synth_image, None)
+
+print("Matching between real and synth image")
+
+matches = matcher.knnMatch(descs_query, descs_synth, k=2)
+# Need to draw only good matches, so create a mask
+matchesMask = [[0,0] for i in range(len(matches))]
+
+good_matches_counter_between_images = 0
+for i,(m,n) in enumerate(matches):
+    if m.distance < ratio_thresh * n.distance:
+        good_matches_counter_between_images += 1
+        matchesMask[i]=[1,0]
+
+draw_params = dict(matchColor = (0,255,0),
+                   singlePointColor = (255,0,0),
+                   matchesMask = matchesMask,
+                   flags = cv2.DrawMatchesFlags_DEFAULT)
+
+synth_query_matches_image = cv2.drawMatchesKnn(query_image, kps_query, synth_image,
+                                                kps_synth, matches, None, **draw_params)
+
+synth_query_matches_image_path = os.path.join(verifications_path, "synth_query_matches_image{:06}.png".format(synth_no))
+cv2.imwrite(synth_query_matches_image_path, synth_query_matches_image)
+
+print("Matching between real and synth image (db features)")
 
 database_features = db.get_feature_data(str(synth_no), row_length)
 descs_train = database_features[:, -128:].astype(np.float32) # last 128 elements (SIFT)
@@ -56,12 +87,6 @@ descs_train = database_features[:, -128:].astype(np.float32) # last 128 elements
 keypoint_image = cv2.drawKeypoints(query_image, kps_query, 0, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
 keypoint_image_path = os.path.join(verifications_path, "query_keypoints_frame{:06}.png".format(synth_no))
 cv2.imwrite(keypoint_image_path, keypoint_image)
-
-FLANN_INDEX_KDTREE = 1 #https://docs.opencv.org/3.4.0/dc/d8c/namespacecvflann.html
-index_params = dict(algorithm=FLANN_INDEX_KDTREE, trees=5)
-search_params = dict(checks=50)  # or pass empty dictionary
-matcher = cv2.FlannBasedMatcher(index_params, search_params)
-ratio_thresh = 0.7
 
 temp_matches = matcher.knnMatch(descs_query, descs_train, k=2)
 
@@ -73,6 +98,10 @@ for m, n in temp_matches:
 good_query_keypoints = np.array(kps_query)[[good_match.queryIdx for good_match in good_matches]]
 keypoints_2D = np.array([good_query_keypoint.pt for good_query_keypoint in good_query_keypoints])
 points_3D = database_features[[good_match.trainIdx for good_match in good_matches]][:, 2:5]
+
+print("good_matches_counter_between_images: " + str(good_matches_counter_between_images))
+print("good_matches_counter_between_image_and_database: " + str(len(good_matches)))
+breakpoint()
 
 K = np.loadtxt(sys.argv[4])
 

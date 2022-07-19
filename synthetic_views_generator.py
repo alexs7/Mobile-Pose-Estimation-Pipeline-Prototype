@@ -106,6 +106,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     poses_path = os.path.join(base_path, "poses/")
     pointclouds_path = os.path.join(base_path, "pointclouds/")
     image_features_path = os.path.join(base_path, "image_features/")
+    verifications_path = os.path.join(base_path, "verifications/")
 
     if not os.path.exists(synth_images_path):
         os.makedirs(synth_images_path)
@@ -117,6 +118,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         os.makedirs(pointclouds_path)
     if not os.path.exists(image_features_path):
         os.makedirs(image_features_path)
+    if not os.path.exists(verifications_path):
+        os.makedirs(verifications_path)
 
     vis.create_window(width=width, height=height)
     vis.add_geometry(mesh)
@@ -127,6 +130,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     print("Data size: " + str(data_length))
 
     for i in range(data_length):
+        i = 140
         print("Setting up data for pose: " + str(i))
         pose = trajectory.parameters[i]
         ctr = vis.get_view_control()
@@ -138,6 +142,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
         depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(i))
         pointcloud_path = os.path.join(pointclouds_path, "{:05d}.pcd".format(i))
+        pointcloud_world_path = os.path.join(pointclouds_path, "world_{:05d}.pcd".format(i))
 
         # save synth image
         vis.capture_screen_image(synth_image_path)
@@ -147,8 +152,11 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         depth_float = vis.capture_depth_float_buffer() #returns an image is saved as numpy array though
         np.save(depth_float_path, depth_float)
 
-        # save pointcloud
-        vis.capture_depth_point_cloud(pointcloud_path, convert_to_world_coordinate=True)
+        # save pointclouds
+        vis.capture_depth_point_cloud(pointcloud_path, convert_to_world_coordinate=False)
+        debug_point_cloud = o3d.io.read_point_cloud(pointcloud_path)
+        vis.capture_depth_point_cloud(pointcloud_world_path, convert_to_world_coordinate=True)
+        debug_point_cloud_world = o3d.io.read_point_cloud(pointcloud_world_path)
 
         # save camera poses
         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
@@ -175,7 +183,34 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         cy = intrinsics[1, 2]
         extrinsics = pose.extrinsic
 
+        print("Drawing keypoints on image..")
+        kps_train_xy = cv2.KeyPoint_convert(kps_train)
+        synth_image_verification = synth_image.copy()
+        synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
+        for j in range(len(kps_train_xy)):
+            xy_drawing = np.round(kps_train_xy[j]).astype(int)
+            cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), -1)
+
+        # print("Projecting world points on image..")
+        # pointcloud_points = np.asarray(debug_point_cloud.points)
+        # pointcloud_points = np.hstack((pointcloud_points, np.ones((pointcloud_points.shape[0], 1))))
+        # pointcloud_points_projected = pose.intrinsic.intrinsic_matrix.dot((pointcloud_points.transpose())[0:3,:])
+        # pointcloud_points_projected = pointcloud_points_projected // pointcloud_points_projected[2, :]
+        # pointcloud_points_projected = pointcloud_points_projected.transpose()
+        #
+        # for world_point_projected in pointcloud_points_projected:
+        #     world_point_projected = world_point_projected.astype(int)
+        #     cv2.circle(synth_image_verification, (world_point_projected[0], world_point_projected[1]) , 2, (0, 0, 0), -1)
+        #
+        # cv2.imwrite(synth_image_verification_path, synth_image_verification)
+
+        for h in range(depth_float_map.shape[0]): # height
+            for w in range(depth_float_map.shape[1]): # width
+                #  get the 3D point here!
+                print()
+
         data_rows = np.empty([0, row_length])
+        point_world_coordinates_all = np.empty([0,3])
         for k in range(len(kps_train)):
             keypoint = kps_train[k]
             descriptor = descs_train[k]  # same order as above
@@ -191,14 +226,71 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
 
             # the points here x,y,z are in camera coordinates
             point_camera_coordinates = np.array([x, y, z, 1]).reshape([4, 1])
+
+            # projecting the camera points (camera coordinate system) on the frame
+            points_projected = pose.intrinsic.intrinsic_matrix.dot(point_camera_coordinates[0:3])
+            points_projected = points_projected // points_projected[2, :]
+            points_projected = points_projected.transpose().astype(int)[0]
+
+            cv2.circle(synth_image_verification, (points_projected[0], points_projected[1]) , 2, (0, 0, 0), -1)
+
+            rotm_t = extrinsics[0:3, 0:3].transpose()
+            trans = -rotm_t.dot(extrinsics[0:3, 3])
+            cam_to_world = np.r_[np.c_[rotm_t, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+
             # transform camera points to world points with inv(pose)
-            point_world_coordinates = np.linalg.inv(extrinsics).dot(point_camera_coordinates)
+            # TODO: divide by z here ?
+            point_world_coordinates = cam_to_world.dot(point_camera_coordinates)
             point_world_coordinates = point_world_coordinates[0:3, :]
+            point_world_coordinates_all = np.r_[point_world_coordinates_all, point_world_coordinates.reshape(1,3)]
+
             x_world = point_world_coordinates[0,0]
             y_world = point_world_coordinates[1,0]
             z_world = point_world_coordinates[2,0]
             data_row = np.append(np.array([xy[0], xy[1], x_world, y_world, z_world, depth]), descriptor).reshape([1, row_length])
             data_rows = np.r_[data_rows, data_row]
+
+        cv2.imwrite(synth_image_verification_path, synth_image_verification)
+        breakpoint()
+        exit()
+
+        print("Creating point clouds..")
+
+        print("  Point cloud 1/3")
+        # will be used many times
+        pointcloud_verification = o3d.geometry.PointCloud()
+        colors = [[0, 0.6, 0] for i in range(point_world_coordinates_all.shape[0])]
+        pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+        pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all)
+        vis.add_geometry(pointcloud_verification)
+
+        print("  Point cloud 2/3")
+        # pointcloud_verification = o3d.geometry.PointCloud()
+        # point_world_coordinates_all_point_cloud_world_estimated = np.empty([0, 3])
+        # for point in np.asarray(debug_point_cloud.points):
+        #     point = np.append(point, 1).reshape(4,1)
+        #     point = cam_to_world.dot(point)[0:3,0].reshape(1,3)
+        #     point_world_coordinates_all_point_cloud_world_estimated = np.r_[point_world_coordinates_all_point_cloud_world_estimated, point]
+        # colors = [[0.6, 0, 0] for i in range(point_world_coordinates_all_point_cloud_world_estimated.shape[0])]
+        # pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+        # pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all_point_cloud_world_estimated)
+        # vis.add_geometry(pointcloud_verification)
+
+        print("  Point cloud 3/3")
+        pointcloud_verification = o3d.geometry.PointCloud()
+        colors = [[0, 0, 0.6] for i in range(np.asarray(debug_point_cloud_world.points).shape[0])]
+        pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+        pointcloud_verification.points = o3d.utility.Vector3dVector(debug_point_cloud_world.points)
+        vis.add_geometry(pointcloud_verification)
+
+        vis.poll_events()
+        vis.update_renderer()
+
+        vis.run()
+
+
+
+        breakpoint()
 
         db.add_feature_data(i, data_rows)
 
