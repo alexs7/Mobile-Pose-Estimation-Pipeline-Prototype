@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 
-def save_projected_points(points_3D, keypoints_2D, est_pose_query, K, real_img, verification_image_path):
+def save_projected_points(points_3D, keypoints_2D, est_pose_query,
+                          K, real_img, verification_image_path):
     green = (0, 255, 0) # for the good matches keypoints
     blue = (255, 0, 0) # for the projected 3D points
     image = real_img.copy()
@@ -17,6 +18,6 @@ def save_projected_points(points_3D, keypoints_2D, est_pose_query, K, real_img, 
         y_real = int(keypoints_2D[i][1])
         center = (x, y)
         center_real = (x_real, y_real)
-        cv2.circle(image, center_real, 14, green, -1)
-        cv2.circle(image, center, 12, blue, -1)
+        cv2.circle(image, center_real, 4, green, -1)
+        cv2.circle(image, center, 2, blue, -1)
     cv2.imwrite(verification_image_path, image)

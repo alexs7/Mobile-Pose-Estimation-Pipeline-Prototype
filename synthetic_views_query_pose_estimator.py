@@ -35,7 +35,7 @@ db = CYENSDatabase.connect(database_path)
 sift = cv2.SIFT_create()
 
 query_frame = sys.argv[2]
-synth_no = sys.argv[3] #150, 12 ...
+synth_no = int(sys.argv[3]) #150, 12 ...
 
 print("Estimating a pose for image with name: " + query_frame)
 
@@ -49,7 +49,8 @@ pose_path = os.path.join(poses_path, "{:05d}.json".format(synth_no))
 pose = o3d.io.read_pinhole_camera_parameters(pose_path)
 
 kps_query, descs_query = sift.detectAndCompute(query_image, None)
-database_features = db.get_feature_data(query_frame, row_length)
+
+database_features = db.get_feature_data(str(synth_no), row_length)
 descs_train = database_features[:, -128:].astype(np.float32) # last 128 elements (SIFT)
 
 keypoint_image = cv2.drawKeypoints(query_image, kps_query, 0, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
@@ -81,8 +82,6 @@ _, rvec, tvec, _ = cv2.solvePnPRansac(points_3D, keypoints_2D, K, np.zeros((5, 1
 rot_matrix = cv2.Rodrigues(rvec)[0] #second value is the jacobian
 est_pose_query = np.c_[rot_matrix, tvec]
 est_pose_query = np.r_[est_pose_query, [np.array([0, 0, 0, 1])]]
-
-print("Projecting points ")
 
 print("Projecting points to verify..")
 verification_image_path = os.path.join(verifications_path, "verified_frame{:06}.png".format(synth_no))
