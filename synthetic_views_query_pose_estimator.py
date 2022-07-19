@@ -24,6 +24,7 @@ poses_path = os.path.join(base_path, "poses/")
 verifications_path = os.path.join(base_path, "verifications/")
 no_images = len(glob.glob(os.path.join(synth_images_path, "*.png")))
 database_path = os.path.join(base_path, "features_data.db")
+query_images_path = os.path.join(base_path, "query_images")
 
 if not os.path.exists(verifications_path):
     os.makedirs(verifications_path)
@@ -33,25 +34,26 @@ db = CYENSDatabase.connect(database_path)
 
 sift = cv2.SIFT_create()
 
-test_index = randint(0, no_images)
+query_frame = sys.argv[2]
+synth_no = sys.argv[3] #150, 12 ...
 
-print("Estimating a pose for image with index: " + str(test_index))
+print("Estimating a pose for image with name: " + query_frame)
 
-real_image_path = os.path.join(images_path, "frame{:06}.png".format(test_index))
-real_img = cv2.imread(real_image_path)
+query_image_path = os.path.join(query_images_path, query_frame)
+query_image = cv2.imread(query_image_path)
 
-synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(test_index))
+synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(synth_no))
 synth_image = cv2.imread(synth_image_path, cv2.IMREAD_GRAYSCALE)
 
-pose_path = os.path.join(poses_path, "{:05d}.json".format(test_index))
+pose_path = os.path.join(poses_path, "{:05d}.json".format(synth_no))
 pose = o3d.io.read_pinhole_camera_parameters(pose_path)
 
-kps_query, descs_query = sift.detectAndCompute(real_img, None)
-database_features = db.get_feature_data(test_index, row_length)
+kps_query, descs_query = sift.detectAndCompute(query_image, None)
+database_features = db.get_feature_data(query_frame, row_length)
 descs_train = database_features[:, -128:].astype(np.float32) # last 128 elements (SIFT)
 
-keypoint_image = cv2.drawKeypoints(real_img, kps_query, 0, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
-keypoint_image_path = os.path.join(verifications_path, "query_keypoints_frame{:06}.png".format(test_index))
+keypoint_image = cv2.drawKeypoints(query_image, kps_query, 0, (0, 0, 255), flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
+keypoint_image_path = os.path.join(verifications_path, "query_keypoints_frame{:06}.png".format(synth_no))
 cv2.imwrite(keypoint_image_path, keypoint_image)
 
 FLANN_INDEX_KDTREE = 1 #https://docs.opencv.org/3.4.0/dc/d8c/namespacecvflann.html
@@ -71,7 +73,9 @@ good_query_keypoints = np.array(kps_query)[[good_match.queryIdx for good_match i
 keypoints_2D = np.array([good_query_keypoint.pt for good_query_keypoint in good_query_keypoints])
 points_3D = database_features[[good_match.trainIdx for good_match in good_matches]][:, 2:5]
 
-_, rvec, tvec, _ = cv2.solvePnPRansac(points_3D, keypoints_2D, pose.intrinsic.intrinsic_matrix, np.zeros((5, 1)),
+K = np.loadtxt(sys.argv[4])
+
+_, rvec, tvec, _ = cv2.solvePnPRansac(points_3D, keypoints_2D, K, np.zeros((5, 1)),
                                       iterationsCount = 3000, confidence = 0.99, flags = cv2.SOLVEPNP_P3P)
 
 rot_matrix = cv2.Rodrigues(rvec)[0] #second value is the jacobian
@@ -81,8 +85,8 @@ est_pose_query = np.r_[est_pose_query, [np.array([0, 0, 0, 1])]]
 print("Projecting points ")
 
 print("Projecting points to verify..")
-verification_image_path = os.path.join(verifications_path, "verified_frame{:06}.png".format(test_index))
-save_projected_points(points_3D, keypoints_2D, est_pose_query, pose.intrinsic.intrinsic_matrix, real_img, verification_image_path)
+verification_image_path = os.path.join(verifications_path, "verified_frame{:06}.png".format(synth_no))
+save_projected_points(points_3D, keypoints_2D, est_pose_query, pose.intrinsic.intrinsic_matrix, query_image, verification_image_path)
 
 print("Done!...")
 end = time.time()
