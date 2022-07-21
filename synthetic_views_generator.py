@@ -204,10 +204,35 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         #
         # cv2.imwrite(synth_image_verification_path, synth_image_verification)
 
+        debug_point_cloud_idx = -1
+        points_cloud_points = np.asarray(debug_point_cloud_world.points)
+        map_3D = np.zeros([depth_float_map.shape[0], depth_float_map.shape[1], 3])
         for h in range(depth_float_map.shape[0]): # height
             for w in range(depth_float_map.shape[1]): # width
                 #  get the 3D point here!
-                print()
+                depth_val = depth_float_map[h,w]
+                if(depth_val == 0.0):
+                    point_3D = np.array([-1,-1,-1])
+                else:
+                    debug_point_cloud_idx += 1
+                    point_3D = points_cloud_points[debug_point_cloud_idx]
+
+                map_3D[h,w] = point_3D
+
+        map_3D = np.flip(map_3D, axis=0)
+        idxs = np.round(kps_train_xy).astype(int)
+        correspondences_2D_3D = np.c_[idxs, map_3D[idxs[:,1],idxs[:,0]]]
+
+        breakpoint()
+
+        _, rvec, tvec, _ = cv2.solvePnPRansac(correspondences_2D_3D[:,2:5].astype(np.float32),
+                                              correspondences_2D_3D[:,0:2].astype(np.float32),
+                                              pose.intrinsic.intrinsic_matrix, np.zeros((5, 1)),
+                                              iterationsCount=3000, confidence=0.99, flags=cv2.SOLVEPNP_P3P)
+
+        rot_matrix = cv2.Rodrigues(rvec)[0]  # second value is the jacobian
+        est_pose = np.c_[rot_matrix, tvec]
+        est_pose = np.r_[est_pose, [np.array([0, 0, 0, 1])]]
 
         data_rows = np.empty([0, row_length])
         point_world_coordinates_all = np.empty([0,3])
@@ -251,46 +276,45 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
             data_rows = np.r_[data_rows, data_row]
 
         cv2.imwrite(synth_image_verification_path, synth_image_verification)
-        breakpoint()
-        exit()
 
-        print("Creating point clouds..")
-
-        print("  Point cloud 1/3")
-        # will be used many times
+        # print("Creating point clouds..")
+        #
+        # print("  Point cloud 1/3")
+        # # will be used many times
+        # pointcloud_verification = o3d.geometry.PointCloud()
+        # colors = [[0, 0.6, 0] for i in range(point_world_coordinates_all.shape[0])]
+        # pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+        # pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all)
+        # vis.add_geometry(pointcloud_verification)
+        #
+        print("  Point cloud 2/3")
         pointcloud_verification = o3d.geometry.PointCloud()
-        colors = [[0, 0.6, 0] for i in range(point_world_coordinates_all.shape[0])]
+        point_world_coordinates_all_point_cloud_world_estimated = correspondences_2D_3D[:,2:5]
+        colors = [[0.6, 0, 0] for i in range(point_world_coordinates_all_point_cloud_world_estimated.shape[0])]
         pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all)
+        pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all_point_cloud_world_estimated)
         vis.add_geometry(pointcloud_verification)
 
-        print("  Point cloud 2/3")
+        # print("  Point cloud 3/3")
         # pointcloud_verification = o3d.geometry.PointCloud()
-        # point_world_coordinates_all_point_cloud_world_estimated = np.empty([0, 3])
-        # for point in np.asarray(debug_point_cloud.points):
-        #     point = np.append(point, 1).reshape(4,1)
-        #     point = cam_to_world.dot(point)[0:3,0].reshape(1,3)
-        #     point_world_coordinates_all_point_cloud_world_estimated = np.r_[point_world_coordinates_all_point_cloud_world_estimated, point]
-        # colors = [[0.6, 0, 0] for i in range(point_world_coordinates_all_point_cloud_world_estimated.shape[0])]
+        # colors = [[0, 0, 0.6] for i in range(np.asarray(debug_point_cloud_world.points).shape[0])]
         # pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        # pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all_point_cloud_world_estimated)
+        # pointcloud_verification.points = o3d.utility.Vector3dVector(debug_point_cloud_world.points)
         # vis.add_geometry(pointcloud_verification)
 
-        print("  Point cloud 3/3")
-        pointcloud_verification = o3d.geometry.PointCloud()
-        colors = [[0, 0, 0.6] for i in range(np.asarray(debug_point_cloud_world.points).shape[0])]
-        pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        pointcloud_verification.points = o3d.utility.Vector3dVector(debug_point_cloud_world.points)
-        vis.add_geometry(pointcloud_verification)
+        ctr = vis.get_view_control()
+        ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+        vis.poll_events()
+        vis.update_renderer()
+
+        print("Done!")
 
         vis.poll_events()
         vis.update_renderer()
 
         vis.run()
 
-
-
-        breakpoint()
+        # breakpoint()
 
         db.add_feature_data(i, data_rows)
 
