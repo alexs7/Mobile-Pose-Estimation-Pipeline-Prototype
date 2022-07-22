@@ -194,6 +194,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         synth_image_verification = synth_image.copy()
 
         synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
+
         for j in range(len(kps_train_xy)):
             xy_drawing = np.round(kps_train_xy[j]).astype(int)
             cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), -1)
@@ -201,28 +202,65 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         synth_image_verification = cv2.drawKeypoints(synth_image_verification, kps_train, 0, (0, 0, 255),
                                                      flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
 
+        print("Getting the 2D-3D matches..")
         debug_point_cloud_idx = -1
         points_cloud_points = np.asarray(debug_point_cloud_world.points)
         map_3D = np.zeros([depth_float_map.shape[0], depth_float_map.shape[1], 3])
-        # ADD THE MASK HERE YOU FUCKTARD RETARD!
+
         for h in range(depth_float_map.shape[0]): # height
             for w in range(depth_float_map.shape[1]): # width
                 #  get the 3D point here!
                 depth_val = depth_float_map[h,w]
                 if(depth_val == 0.0):
-                    point_3D = np.array([-1,-1,-1])
+                    point_3D = np.array([0,0,0])
                 else:
                     debug_point_cloud_idx += 1
                     point_3D = points_cloud_points[debug_point_cloud_idx]
                 map_3D[h,w] = point_3D
 
-        map_3D = np.flip(map_3D, axis=0) #  have to slip here because Open3D does a flipping
+        map_3D_flipped = np.flip(map_3D, axis=0) #  have to slip here because Open3D does a flipping
+        # for the above do you have to flip the 2D y coordinates too ?
+
+        ys_3D = np.where((map_3D[:,:,0]!=0) & (map_3D[:,:,1]!=0) & (map_3D[:,:,2]!=0))[0]
+        xs_3D = np.where((map_3D[:,:,0]!=0) & (map_3D[:,:,1]!=0) & (map_3D[:,:,2]!=0))[1]
+
+        ys_3D_flipped = np.where((map_3D_flipped[:, :, 0] != 0) & (map_3D_flipped[:, :, 1] != 0) & (map_3D_flipped[:, :, 2] != 0))[0]
+        xs_3D_flipped = np.where((map_3D_flipped[:, :, 0] != 0) & (map_3D_flipped[:, :, 1] != 0) & (map_3D_flipped[:, :, 2] != 0))[1]
+
+        map_3D_verification_image = np.zeros([map_3D.shape[0], map_3D.shape[1]])
+        ys_3D_kt_for_2D_image = np.array([((845 -1) - y) for y in ys_3D_flipped])
+
+        map_3D_verification_image[ys_3D_kt_for_2D_image, xs_3D_flipped] = 255
+        cv2.imwrite(synth_image_verification_path, map_3D_verification_image)
+
         kps_train_xy_rounded = np.round(kps_train_xy).astype(int)
-        correspondences_2D_3D = np.c_[kps_train_xy_rounded, map_3D[kps_train_xy_rounded[:,1],kps_train_xy_rounded[:,0]]]
 
-        keypoints_world_points_3D = correspondences_2D_3D[:, 2:5]
+        xs_3D_kt = kps_train_xy_rounded[:, 0]
+        ys_3D_kt = kps_train_xy_rounded[:, 1]
+        ys_3D_kt_for_map_3D = np.array([(map_3D.shape[0] - y) for y in ys_3D_kt])
 
-        print("Rendering the keypoints' corresponding 3D points..")
+        correspondences_2D_3D = np.c_[kps_train_xy_rounded, map_3D[ys_3D_kt_for_map_3D, xs_3D_kt]]
+
+        breakpoint()
+        
+        keypoints_world_points_3D = map_3D[ys_3D, xs_3D]
+        sample_points_3D = map_3D[ np.arange(0,845),  np.arange(0,845)]
+
+        print("Rendering sample_points_3D")
+        pointcloud_verification = o3d.geometry.PointCloud()
+        colors = [[0.8, 0.6, 0] for i in range(sample_points_3D.shape[0])]
+        pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+        pointcloud_verification.points = o3d.utility.Vector3dVector(sample_points_3D)
+        vis.add_geometry(pointcloud_verification)
+
+        ctr = vis.get_view_control()
+        ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+        vis.poll_events()
+        vis.update_renderer()
+
+        breakpoint()
+
+        print("Rendering keypoints_world_points_3D")
         pointcloud_verification = o3d.geometry.PointCloud()
         colors = [[0.6, 0, 0] for i in range(keypoints_world_points_3D.shape[0])]
         pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
@@ -234,7 +272,11 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         vis.poll_events()
         vis.update_renderer()
 
+        breakpoint()
+
         vis.capture_screen_image(synth_image_with_pointcloud_path)
+
+        vis.run()
 
         vis.remove_geometry(pointcloud_verification)
 
