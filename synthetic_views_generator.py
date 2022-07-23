@@ -144,11 +144,12 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         vis.update_renderer()
 
         synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(i))
-        synth_image_with_pointcloud_path = os.path.join(synth_images_path, "{:05d}_with_cloud.png".format(i))
         depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
         depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(i))
         pointcloud_path = os.path.join(pointclouds_path, "{:05d}.pcd".format(i))
         pointcloud_world_path = os.path.join(pointclouds_path, "world_{:05d}.pcd".format(i))
+        map3D_image_verification_path = os.path.join(verifications_path, "map3D_flipped_verification_{:06}.png".format(i))
+        synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
 
         # save synth image
         vis.capture_screen_image(synth_image_path)
@@ -193,14 +194,14 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         kps_train_xy = cv2.KeyPoint_convert(kps_train)
         synth_image_verification = synth_image.copy()
 
-        synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
-
         for j in range(len(kps_train_xy)):
             xy_drawing = np.round(kps_train_xy[j]).astype(int)
             cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), -1)
 
         synth_image_verification = cv2.drawKeypoints(synth_image_verification, kps_train, 0, (0, 0, 255),
                                                      flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
+
+        cv2.imwrite(synth_image_verification_path, synth_image_verification)
 
         print("Getting the 2D-3D matches..")
         debug_point_cloud_idx = -1
@@ -219,7 +220,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
                 map_3D[h,w] = point_3D
 
         map_3D_flipped = np.flip(map_3D, axis=0) #  have to slip here because Open3D does a flipping
-        # for the above do you have to flip the 2D y coordinates too ?
 
         ys_3D = np.where((map_3D[:,:,0]!=0) & (map_3D[:,:,1]!=0) & (map_3D[:,:,2]!=0))[0]
         xs_3D = np.where((map_3D[:,:,0]!=0) & (map_3D[:,:,1]!=0) & (map_3D[:,:,2]!=0))[1]
@@ -232,7 +232,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         ys_3D_flipped_for_2D_image = np.array([image_height_zero_based - y for y in ys_3D_flipped])
 
         map_3D_verification_image[ys_3D_flipped_for_2D_image, xs_3D_flipped] = 255
-        cv2.imwrite(synth_image_verification_path, map_3D_verification_image)
+        cv2.imwrite(map3D_image_verification_path, map_3D_verification_image)
 
         kps_train_xy_rounded = np.round(kps_train_xy).astype(int)
 
@@ -248,10 +248,9 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
             map_3D_idxs = np.append(map_3D_idxs, map_3D_idx[0][0])
 
         map_3D_idxs = map_3D_idxs.astype(int)
-        # keypoints_world_points_3D = map_3D[ys_3D, xs_3D]
         keypoints_world_points_3D = correspondences_2D_2D_3D[map_3D_idxs, 4:]
 
-        print("Rendering keypoints_world_points_3D")
+        print("Rendering keypoints' 3D projected points..")
         pointcloud_verification = o3d.geometry.PointCloud()
         colors = [[0.6, 0, 0] for i in range(keypoints_world_points_3D.shape[0])]
         pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
@@ -263,119 +262,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         vis.poll_events()
         vis.update_renderer()
 
-        # print("Estimating the poses here..")
-        # _, rvec, tvec, _ = cv2.solvePnPRansac(keypoints_world_points_3D.astype(np.float32),
-        #                                       kps_train_xy_rounded.astype(np.float32),
-        #                                       pose.intrinsic.intrinsic_matrix, None,
-        #                                       iterationsCount=3000, confidence=0.99, flags=cv2.SOLVEPNP_P3P)
-        #
-        # rot_matrix = cv2.Rodrigues(rvec)[0]  # second value is the jacobian
-        # est_pose = np.c_[rot_matrix, tvec]
-        # est_pose = np.r_[est_pose, [np.array([0, 0, 0, 1])]]
-
-        # poses = pnp(pts_2d=correspondences_2D_3D[:,0:2],
-        #             pts_3d=correspondences_2D_3D[:,2:5],
-        #             K=pose.intrinsic.intrinsic_matrix,
-        #             max_iters = 5000)
-        # R, t = poses[0]
-        # est_pose = np.r_[(np.c_[R, t]), [np.array([0, 0, 0, 1])]]
-
-        # print("Projecting world points on image using intrinsics + world pose matrix.. (red)")
-        #
-        # keypoints_world_points_3D
-        # keypoints_world_points_3D = np.hstack((keypoints_world_points_3D, np.ones((keypoints_world_points_3D.shape[0], 1))))
-        # points_2D_world_projected = pose.intrinsic.intrinsic_matrix.dot(est_pose.dot(keypoints_world_points_3D.transpose())[0:3, :])
-        # points_2D_world_projected = points_2D_world_projected // points_2D_world_projected[2, :]
-        # points_2D_world_projected = points_2D_world_projected.transpose()
-        # points_2D_world_projected = points_2D_world_projected.astype(int)
-
-        # for point in points_2D_world_projected:
-        #     cv2.circle(synth_image_verification, (point[0], point[1]) , 2, (0, 0, 255), -1)
-
-        cv2.imwrite(synth_image_verification_path, synth_image_verification)
-
-        exit()
-
-        # print("Estimating 3D point coordinates (in camera space) using the depth maps.")
-        # data_rows = np.empty([0, row_length])
-        # point_world_coordinates_all = np.empty([0,3])
-        # for k in range(len(kps_train)):
-        #     keypoint = kps_train[k]
-        #     descriptor = descs_train[k]  # same order as above
-        #     xy = np.round(keypoint.pt).astype(int)  # openCV convention (x,y)
-        #     # numpy convention
-        #     row = xy[1]
-        #     col = xy[0]
-        #     depth = depth_float_map[row, col]
-        #     # z = depth / depth_scale  # if you use vis.capture_depth_float_buffer() to get the depth do not divide by depth_scale
-        #     z = depth
-        #     x = (xy[0] - cx) * z / fx
-        #     y = (xy[1] - cy) * z / fy
-        #
-        #     # the points here x,y,z are in camera coordinates
-        #     point_camera_coordinates = np.array([x, y, z, 1]).reshape([4, 1])
-        #
-        #     # projecting the camera points (camera coordinate system) on the frame
-        #     points_projected = pose.intrinsic.intrinsic_matrix.dot(point_camera_coordinates[0:3])
-        #     points_projected = points_projected // points_projected[2, :]
-        #     points_projected = points_projected.transpose().astype(int)[0]
-        #
-        #     cv2.circle(synth_image_verification, (points_projected[0], points_projected[1]) , 2, (0, 0, 0), -1)
-        #
-        #     rotm_t = extrinsics[0:3, 0:3].transpose()
-        #     trans = -rotm_t.dot(extrinsics[0:3, 3])
-        #     cam_to_world = np.r_[np.c_[rotm_t, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
-        #
-        #     # transform camera points to world points with inv(pose)
-        #     # TODO: divide by z here ?
-        #     point_world_coordinates = cam_to_world.dot(point_camera_coordinates)
-        #     point_world_coordinates = point_world_coordinates[0:3, :]
-        #     point_world_coordinates_all = np.r_[point_world_coordinates_all, point_world_coordinates.reshape(1,3)]
-        #
-        #     x_world = point_world_coordinates[0,0]
-        #     y_world = point_world_coordinates[1,0]
-        #     z_world = point_world_coordinates[2,0]
-        #     data_row = np.append(np.array([xy[0], xy[1], x_world, y_world, z_world, depth]), descriptor).reshape([1, row_length])
-        #     data_rows = np.r_[data_rows, data_row]
-
-        # cv2.imwrite(synth_image_verification_path, synth_image_verification)
-
-        # print("Creating point clouds..")
-        #
-        # print("  Point cloud 1/3")
-        # # will be used many times
-        # pointcloud_verification = o3d.geometry.PointCloud()
-        # colors = [[0, 0.6, 0] for i in range(point_world_coordinates_all.shape[0])]
-        # pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        # pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all)
-        # vis.add_geometry(pointcloud_verification)
-        #
-        # print("  Point cloud 2/3")
-        # pointcloud_verification = o3d.geometry.PointCloud()
-        # point_world_coordinates_all_point_cloud_world_estimated = correspondences_2D_3D[:,2:5]
-        # colors = [[0.6, 0, 0] for i in range(point_world_coordinates_all_point_cloud_world_estimated.shape[0])]
-        # pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        # pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all_point_cloud_world_estimated)
-        # vis.add_geometry(pointcloud_verification)
-
-        # print("  Point cloud 3/3")
-        # pointcloud_verification = o3d.geometry.PointCloud()
-        # colors = [[0, 0, 0.6] for i in range(np.asarray(debug_point_cloud_world.points).shape[0])]
-        # pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        # pointcloud_verification.points = o3d.utility.Vector3dVector(debug_point_cloud_world.points)
-        # vis.add_geometry(pointcloud_verification)
-
-        # ctr = vis.get_view_control()
-        # ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
-        # vis.poll_events()
-        # vis.update_renderer()
-
-        # print("Done!")
-
-        # vis.run()
-
-        depths = depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]].reshape(
-            len(depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]]), 1)
+        depths = depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]].reshape(len(depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]]), 1)
 
         data_rows = np.c_[kps_train_xy_rounded, keypoints_world_points_3D, depths, descs_train]
         db.add_feature_data(i, data_rows)
@@ -409,3 +296,108 @@ elapsed_time = end - start
 print("Time taken (s): " + str(elapsed_time))
 
 exit()
+
+# Old code:
+
+# print("Estimating the poses here..")
+# _, rvec, tvec, _ = cv2.solvePnPRansac(keypoints_world_points_3D.astype(np.float32),
+#                                       kps_train_xy_rounded.astype(np.float32),
+#                                       pose.intrinsic.intrinsic_matrix, None,
+#                                       iterationsCount=3000, confidence=0.99, flags=cv2.SOLVEPNP_P3P)
+#
+# rot_matrix = cv2.Rodrigues(rvec)[0]  # second value is the jacobian
+# est_pose = np.c_[rot_matrix, tvec]
+# est_pose = np.r_[est_pose, [np.array([0, 0, 0, 1])]]
+
+# poses = pnp(pts_2d=correspondences_2D_3D[:,0:2],
+#             pts_3d=correspondences_2D_3D[:,2:5],
+#             K=pose.intrinsic.intrinsic_matrix,
+#             max_iters = 5000)
+# R, t = poses[0]
+# est_pose = np.r_[(np.c_[R, t]), [np.array([0, 0, 0, 1])]]
+
+# print("Projecting world points on image using intrinsics + world pose matrix.. (red)")
+#
+# keypoints_world_points_3D
+# keypoints_world_points_3D = np.hstack((keypoints_world_points_3D, np.ones((keypoints_world_points_3D.shape[0], 1))))
+# points_2D_world_projected = pose.intrinsic.intrinsic_matrix.dot(est_pose.dot(keypoints_world_points_3D.transpose())[0:3, :])
+# points_2D_world_projected = points_2D_world_projected // points_2D_world_projected[2, :]
+# points_2D_world_projected = points_2D_world_projected.transpose()
+# points_2D_world_projected = points_2D_world_projected.astype(int)
+
+# for point in points_2D_world_projected:
+#     cv2.circle(synth_image_verification, (point[0], point[1]) , 2, (0, 0, 255), -1)
+
+# print("Estimating 3D point coordinates (in camera space) using the depth maps.")
+# data_rows = np.empty([0, row_length])
+# point_world_coordinates_all = np.empty([0,3])
+# for k in range(len(kps_train)):
+#     keypoint = kps_train[k]
+#     descriptor = descs_train[k]  # same order as above
+#     xy = np.round(keypoint.pt).astype(int)  # openCV convention (x,y)
+#     # numpy convention
+#     row = xy[1]
+#     col = xy[0]
+#     depth = depth_float_map[row, col]
+#     # z = depth / depth_scale  # if you use vis.capture_depth_float_buffer() to get the depth do not divide by depth_scale
+#     z = depth
+#     x = (xy[0] - cx) * z / fx
+#     y = (xy[1] - cy) * z / fy
+#
+#     # the points here x,y,z are in camera coordinates
+#     point_camera_coordinates = np.array([x, y, z, 1]).reshape([4, 1])
+#
+#     # projecting the camera points (camera coordinate system) on the frame
+#     points_projected = pose.intrinsic.intrinsic_matrix.dot(point_camera_coordinates[0:3])
+#     points_projected = points_projected // points_projected[2, :]
+#     points_projected = points_projected.transpose().astype(int)[0]
+#
+#     cv2.circle(synth_image_verification, (points_projected[0], points_projected[1]) , 2, (0, 0, 0), -1)
+#
+#     rotm_t = extrinsics[0:3, 0:3].transpose()
+#     trans = -rotm_t.dot(extrinsics[0:3, 3])
+#     cam_to_world = np.r_[np.c_[rotm_t, trans], np.array([0, 0, 0, 1]).reshape(1,4)]
+#
+#     # transform camera points to world points with inv(pose)
+#     # TODO: divide by z here ?
+#     point_world_coordinates = cam_to_world.dot(point_camera_coordinates)
+#     point_world_coordinates = point_world_coordinates[0:3, :]
+#     point_world_coordinates_all = np.r_[point_world_coordinates_all, point_world_coordinates.reshape(1,3)]
+#
+#     x_world = point_world_coordinates[0,0]
+#     y_world = point_world_coordinates[1,0]
+#     z_world = point_world_coordinates[2,0]
+#     data_row = np.append(np.array([xy[0], xy[1], x_world, y_world, z_world, depth]), descriptor).reshape([1, row_length])
+#     data_rows = np.r_[data_rows, data_row]
+
+# cv2.imwrite(synth_image_verification_path, synth_image_verification)
+
+# print("Creating point clouds..")
+#
+# print("  Point cloud 1/3")
+# # will be used many times
+# pointcloud_verification = o3d.geometry.PointCloud()
+# colors = [[0, 0.6, 0] for i in range(point_world_coordinates_all.shape[0])]
+# pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+# pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all)
+# vis.add_geometry(pointcloud_verification)
+#
+# print("  Point cloud 2/3")
+# pointcloud_verification = o3d.geometry.PointCloud()
+# point_world_coordinates_all_point_cloud_world_estimated = correspondences_2D_3D[:,2:5]
+# colors = [[0.6, 0, 0] for i in range(point_world_coordinates_all_point_cloud_world_estimated.shape[0])]
+# pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+# pointcloud_verification.points = o3d.utility.Vector3dVector(point_world_coordinates_all_point_cloud_world_estimated)
+# vis.add_geometry(pointcloud_verification)
+
+# print("  Point cloud 3/3")
+# pointcloud_verification = o3d.geometry.PointCloud()
+# colors = [[0, 0, 0.6] for i in range(np.asarray(debug_point_cloud_world.points).shape[0])]
+# pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
+# pointcloud_verification.points = o3d.utility.Vector3dVector(debug_point_cloud_world.points)
+# vis.add_geometry(pointcloud_verification)
+
+# ctr = vis.get_view_control()
+# ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+# vis.poll_events()
+# vis.update_renderer()
