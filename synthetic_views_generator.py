@@ -147,7 +147,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         synth_image_with_pointcloud_path = os.path.join(synth_images_path, "{:05d}_with_cloud.png".format(i))
         depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
         depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(i))
-        # pointcloud_path = os.path.join(pointclouds_path, "{:05d}.pcd".format(i))
+        pointcloud_path = os.path.join(pointclouds_path, "{:05d}.pcd".format(i))
         pointcloud_world_path = os.path.join(pointclouds_path, "world_{:05d}.pcd".format(i))
 
         # save synth image
@@ -159,8 +159,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         np.save(depth_float_path, depth_float)
 
         # save pointclouds
-        # vis.capture_depth_point_cloud(pointcloud_path, convert_to_world_coordinate=False)
-        # debug_point_cloud = o3d.io.read_point_cloud(pointcloud_path)
+        vis.capture_depth_point_cloud(pointcloud_path, convert_to_world_coordinate=False)
+        debug_point_cloud = o3d.io.read_point_cloud(pointcloud_path)
         vis.capture_depth_point_cloud(pointcloud_world_path, convert_to_world_coordinate=True)
         debug_point_cloud_world = o3d.io.read_point_cloud(pointcloud_world_path)
 
@@ -228,37 +228,28 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         xs_3D_flipped = np.where((map_3D_flipped[:, :, 0] != 0) & (map_3D_flipped[:, :, 1] != 0) & (map_3D_flipped[:, :, 2] != 0))[1]
 
         map_3D_verification_image = np.zeros([map_3D.shape[0], map_3D.shape[1]])
-        ys_3D_kt_for_2D_image = np.array([((845 -1) - y) for y in ys_3D_flipped])
+        image_height_zero_based = map_3D.shape[0] - 1
+        ys_3D_flipped_for_2D_image = np.array([image_height_zero_based - y for y in ys_3D_flipped])
 
-        map_3D_verification_image[ys_3D_kt_for_2D_image, xs_3D_flipped] = 255
+        map_3D_verification_image[ys_3D_flipped_for_2D_image, xs_3D_flipped] = 255
         cv2.imwrite(synth_image_verification_path, map_3D_verification_image)
 
         kps_train_xy_rounded = np.round(kps_train_xy).astype(int)
 
         xs_3D_kt = kps_train_xy_rounded[:, 0]
         ys_3D_kt = kps_train_xy_rounded[:, 1]
-        ys_3D_kt_for_map_3D = np.array([(map_3D.shape[0] - y) for y in ys_3D_kt])
 
-        correspondences_2D_3D = np.c_[kps_train_xy_rounded, map_3D[ys_3D_kt_for_map_3D, xs_3D_kt]]
+        correspondences_2D_2D_3D = np.c_[ ys_3D_flipped_for_2D_image , xs_3D_flipped,
+                                          ys_3D, xs_3D, map_3D[ys_3D, xs_3D]]
 
-        breakpoint()
-        
-        keypoints_world_points_3D = map_3D[ys_3D, xs_3D]
-        sample_points_3D = map_3D[ np.arange(0,845),  np.arange(0,845)]
+        map_3D_idxs = np.empty([0,1])
+        for kt_idx in range(kps_train_xy_rounded.shape[0]):
+            map_3D_idx = np.where((correspondences_2D_2D_3D[:,0] == ys_3D_kt[kt_idx]) & (correspondences_2D_2D_3D[:,1] == xs_3D_kt[kt_idx]))
+            map_3D_idxs = np.append(map_3D_idxs, map_3D_idx[0][0])
 
-        print("Rendering sample_points_3D")
-        pointcloud_verification = o3d.geometry.PointCloud()
-        colors = [[0.8, 0.6, 0] for i in range(sample_points_3D.shape[0])]
-        pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
-        pointcloud_verification.points = o3d.utility.Vector3dVector(sample_points_3D)
-        vis.add_geometry(pointcloud_verification)
-
-        ctr = vis.get_view_control()
-        ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
-        vis.poll_events()
-        vis.update_renderer()
-
-        breakpoint()
+        map_3D_idxs = map_3D_idxs.astype(int)
+        # keypoints_world_points_3D = map_3D[ys_3D, xs_3D]
+        keypoints_world_points_3D = correspondences_2D_2D_3D[map_3D_idxs, 4:]
 
         print("Rendering keypoints_world_points_3D")
         pointcloud_verification = o3d.geometry.PointCloud()
@@ -271,14 +262,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
         vis.poll_events()
         vis.update_renderer()
-
-        breakpoint()
-
-        vis.capture_screen_image(synth_image_with_pointcloud_path)
-
-        vis.run()
-
-        vis.remove_geometry(pointcloud_verification)
 
         # print("Estimating the poses here..")
         # _, rvec, tvec, _ = cv2.solvePnPRansac(keypoints_world_points_3D.astype(np.float32),
