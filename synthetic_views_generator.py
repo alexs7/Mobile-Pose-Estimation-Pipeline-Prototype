@@ -297,7 +297,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     vis.destroy_window()
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
-database_path = os.path.join(base_path, "features_data.db")
+database_path = os.path.join(base_path, "features_data_wcs.db")
 
 start = time.time()
 

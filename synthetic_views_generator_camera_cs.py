@@ -108,8 +108,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     synth_images_path = os.path.join(base_path, "synth_images/")
     depths_path = os.path.join(base_path, "depths/")
     poses_path = os.path.join(base_path, "poses/")
-    pointclouds_path = os.path.join(base_path, "pointclouds/")
-    image_features_path = os.path.join(base_path, "image_features/")
     verifications_path = os.path.join(base_path, "verifications/")
 
     if not os.path.exists(synth_images_path):
@@ -118,10 +116,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         os.makedirs(depths_path)
     if not os.path.exists(poses_path):
         os.makedirs(poses_path)
-    if not os.path.exists(pointclouds_path):
-        os.makedirs(pointclouds_path)
-    if not os.path.exists(image_features_path):
-        os.makedirs(image_features_path)
     if not os.path.exists(verifications_path):
         os.makedirs(verifications_path)
 
@@ -139,19 +133,18 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         pose = trajectory.parameters[i]
         ctr = vis.get_view_control()
         # will convert to world coordinates here (I found no way to extract the
-        # world pose from this method, you can just get it from the camera pose )
+        # world pose from this method, maybe you can just get it from the camera pose? - not really I couldn't )
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
         vis.poll_events()
         vis.update_renderer()
 
         synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(i))
-        synth_image_original_path = os.path.join(synth_images_path, "original_{:05d}.png".format(i))
         depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
         depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(i))
+        verifications_image_path = os.path.join(verifications_path, "{:05d}.png".format(i))
 
         # save synth image
         vis.capture_screen_image(synth_image_path)
-        vis.capture_screen_image(synth_image_original_path)
 
         # save both depths
         vis.capture_depth_image(depth_path)
@@ -162,7 +155,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(captured_poses_path, pose) # save the pose in camera coordinates
 
-        print("Extracting data from pose: " + str(i))
+        print(" Extracting data from pose: " + str(i))
 
         synth_image = cv2.imread(synth_image_path)
 
@@ -176,13 +169,13 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
 
         kps_train, descs_train = sift.detectAndCompute(synth_image, mask=mask)
 
-        print("Drawing detected keypoints on image.. (green)")
+        print(" Drawing detected keypoints on image.. (green)")
         kps_train_xy = cv2.KeyPoint_convert(kps_train)
         synth_image_verification = synth_image.copy()
 
         for j in range(len(kps_train_xy)):
             xy_drawing = np.round(kps_train_xy[j]).astype(int)
-            cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 3, (0, 255, 0), -1)
+            cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), -1)
 
         intrinsics = pose.intrinsic.intrinsic_matrix
         fx = intrinsics[0, 0]
@@ -191,7 +184,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         cy = intrinsics[1, 2]
         extrinsics = pose.extrinsic
 
-        print("Estimating 3D point coordinates (in camera space) using the depth maps.")
+        print(" Estimating 3D point coordinates (in camera space) using the depth maps.")
         data_rows = np.empty([0, row_length])
         for k in range(len(kps_train)):
             keypoint = kps_train[k]
@@ -211,24 +204,27 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
 
             # projecting the camera points (camera coordinate system) on the frame
             points_projected = pose.intrinsic.intrinsic_matrix.dot(point_camera_coordinates[0:3])
-            points_projected = points_projected // points_projected[2, :]
-            points_projected = points_projected.transpose().astype(int)[0]
+            points_projected = points_projected / points_projected[2, :]
+            points_projected = np.round(points_projected.transpose()).astype(int)[0]
 
-            breakpoint()
+            assert(points_projected[0] == xy[0])
+            assert(points_projected[1] == xy[1])
 
             data_row = np.append(np.array([xy[0], xy[1], x, y, z, depth]), descriptor).reshape([1, row_length])
             data_rows = np.r_[data_rows, data_row]
 
-            cv2.circle(synth_image_verification, (points_projected[0], points_projected[1]) , 2, (0, 0, 0), -1)
+            # pass (x,y) but reverses them in the method to (y,x)
+            cv2.circle(synth_image_verification, (points_projected[0], points_projected[1]) , 3, (0, 0, 255), -1)
 
-        breakpoint()
-        
+        print(" Saving verification image..")
+        cv2.imwrite(verifications_image_path, synth_image_verification)
+        print(" Saving db row..")
         db.add_feature_data(i, data_rows)
 
     vis.destroy_window()
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
-database_path = os.path.join(base_path, "features_data.db")
+database_path = os.path.join(base_path, "features_data_ccs.db")
 
 start = time.time()
 
