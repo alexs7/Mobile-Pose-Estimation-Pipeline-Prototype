@@ -143,6 +143,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         vis.update_renderer()
 
         synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(i))
+        synth_image_original_path = os.path.join(synth_images_path, "original_{:05d}.png".format(i))
         depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
         depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(i))
         pointcloud_path = os.path.join(pointclouds_path, "{:05d}.pcd".format(i))
@@ -151,7 +152,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
 
         # save synth image
-        vis.capture_screen_image(synth_image_path)
+        # vis.capture_screen_image(synth_image_path)
+        vis.capture_screen_image(synth_image_original_path)
 
         # save both depths
         vis.capture_depth_image(depth_path)
