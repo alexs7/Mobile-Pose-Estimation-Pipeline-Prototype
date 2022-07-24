@@ -7,6 +7,8 @@ import os
 import cv2
 from cvxpnpl import pnp
 
+np.set_printoptions(precision=3, suppress=True)
+
 from cyens_database import CYENSDatabase
 
 WIDTH = 1920
@@ -150,9 +152,12 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         pointcloud_world_path = os.path.join(pointclouds_path, "world_{:05d}.pcd".format(i))
         map3D_image_verification_path = os.path.join(verifications_path, "map3D_flipped_verification_{:06}.png".format(i))
         synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
+        map_3D_keypoint_image_only_3D_projected_points_path = os.path.join(verifications_path, "map3D_projected_3D_keypoints_verification_{:06}.png".format(i))
+        map_3D_keypoint_image_only_3D_projected_points_and_keypoints_2D_path = os.path.join(verifications_path, "map3D_projected_3D_keypoints_and_2D_verification_{:06}.png".format(i))
+        map_3D_keypoint_image_only_3D_estimated_projected_points_and_keypoints_2D_path = os.path.join(verifications_path, "map3D_projected_3D_estimated_keypoints_and_2D_verification_{:06}.png".format(i))
 
         # save synth image
-        # vis.capture_screen_image(synth_image_path)
+        vis.capture_screen_image(synth_image_path)
         vis.capture_screen_image(synth_image_original_path)
 
         # save both depths
@@ -184,13 +189,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
 
         kps_train, descs_train = sift.detectAndCompute(synth_image, mask=mask)
 
-        intrinsics = pose.intrinsic.intrinsic_matrix
-        # fx = intrinsics[0, 0]
-        # fy = intrinsics[1, 1]
-        # cx = intrinsics[0, 2]
-        # cy = intrinsics[1, 2]
-        # extrinsics = pose.extrinsic
-
         print("Drawing detected keypoints on image.. (green)")
         kps_train_xy = cv2.KeyPoint_convert(kps_train)
         synth_image_verification = synth_image.copy()
@@ -199,8 +197,8 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
             xy_drawing = np.round(kps_train_xy[j]).astype(int)
             cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), -1)
 
-        synth_image_verification = cv2.drawKeypoints(synth_image_verification, kps_train, 0, (0, 0, 255),
-                                                     flags=cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
+        synth_image_verification = cv2.drawKeypoints(synth_image_verification, kps_train, 0,
+                                                     (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
         cv2.imwrite(synth_image_verification_path, synth_image_verification)
 
@@ -263,7 +261,35 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         vis.poll_events()
         vis.update_renderer()
 
+        vis.capture_screen_image(map_3D_keypoint_image_only_3D_projected_points_path)
+
+        keypoints_only_3D_points_image = cv2.imread(map_3D_keypoint_image_only_3D_projected_points_path)
+        for j in range(len(kps_train_xy)):
+            xy_drawing = np.round(kps_train_xy[j]).astype(int)
+            cv2.circle(keypoints_only_3D_points_image, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), 2)
+        cv2.imwrite(map_3D_keypoint_image_only_3D_projected_points_and_keypoints_2D_path, keypoints_only_3D_points_image)
+
         depths = depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]].reshape(len(depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]]), 1)
+
+        print("Estimating the poses here..")
+        _, rvec, tvec, _ = cv2.solvePnPRansac(keypoints_world_points_3D.astype(np.float32), kps_train_xy_rounded.astype(np.float32), pose.intrinsic.intrinsic_matrix, distCoeffs=None, iterationsCount=3000, confidence=0.99, flags=cv2.SOLVEPNP_P3P)
+
+        rot_matrix = cv2.Rodrigues(rvec)[0]  # second value is the jacobian
+        est_pose = np.c_[rot_matrix, tvec]
+        est_pose = np.r_[est_pose, [np.array([0, 0, 0, 1])]]
+
+        keypoints_world_points_3D = np.c_[keypoints_world_points_3D, np.ones(keypoints_world_points_3D.shape[0])]
+        K = np.eye(4)
+        K[0:3,0:3] = pose.intrinsic.intrinsic_matrix
+        points_projected = K.dot(est_pose.dot(keypoints_world_points_3D.transpose()))
+        points_projected = points_projected / points_projected[2, :]
+        points_projected = points_projected.transpose()[:,0:2]
+
+        keypoints_only_3D_points_image = cv2.imread(map_3D_keypoint_image_only_3D_projected_points_path)
+        for j in range(len(points_projected)):
+            xy_drawing = np.round(points_projected[j]).astype(int)
+            cv2.circle(keypoints_only_3D_points_image, (xy_drawing[0], xy_drawing[1]) , 4, (255, 0, 0), 2)
+        cv2.imwrite(map_3D_keypoint_image_only_3D_projected_points_and_keypoints_2D_path, keypoints_only_3D_points_image)
 
         data_rows = np.c_[kps_train_xy_rounded, keypoints_world_points_3D, depths, descs_train]
         db.add_feature_data(i, data_rows)
@@ -299,16 +325,6 @@ print("Time taken (s): " + str(elapsed_time))
 exit()
 
 # Old code:
-
-# print("Estimating the poses here..")
-# _, rvec, tvec, _ = cv2.solvePnPRansac(keypoints_world_points_3D.astype(np.float32),
-#                                       kps_train_xy_rounded.astype(np.float32),
-#                                       pose.intrinsic.intrinsic_matrix, None,
-#                                       iterationsCount=3000, confidence=0.99, flags=cv2.SOLVEPNP_P3P)
-#
-# rot_matrix = cv2.Rodrigues(rvec)[0]  # second value is the jacobian
-# est_pose = np.c_[rot_matrix, tvec]
-# est_pose = np.r_[est_pose, [np.array([0, 0, 0, 1])]]
 
 # poses = pnp(pts_2d=correspondences_2D_3D[:,0:2],
 #             pts_3d=correspondences_2D_3D[:,2:5],
