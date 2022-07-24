@@ -132,7 +132,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     print("Data size: " + str(data_length))
 
     for i in range(data_length):
-        i = 2
         print("Setting up data for pose: " + str(i))
         # in camera coordinates
         pose = trajectory.parameters[i]
