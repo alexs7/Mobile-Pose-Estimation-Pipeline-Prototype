@@ -148,13 +148,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         synth_image_original_path = os.path.join(synth_images_path, "original_{:05d}.png".format(i))
         depth_path = os.path.join(depths_path, "{:05d}.png".format(i))
         depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(i))
-        pointcloud_path = os.path.join(pointclouds_path, "{:05d}.pcd".format(i))
-        pointcloud_world_path = os.path.join(pointclouds_path, "world_{:05d}.pcd".format(i))
-        map3D_image_verification_path = os.path.join(verifications_path, "map3D_flipped_verification_{:06}.png".format(i))
-        synth_image_verification_path = os.path.join(verifications_path, "synth_query_image_keypoints_projected_{:06}.png".format(i))
-        map_3D_keypoint_image_only_3D_projected_points_path = os.path.join(verifications_path, "map3D_projected_3D_keypoints_verification_{:06}.png".format(i))
-        map_3D_keypoint_image_only_3D_projected_points_and_keypoints_2D_path = os.path.join(verifications_path, "map3D_projected_3D_keypoints_and_2D_verification_{:06}.png".format(i))
-        map_3D_keypoint_image_only_3D_estimated_projected_points_and_keypoints_2D_path = os.path.join(verifications_path, "map3D_projected_3D_estimated_keypoints_and_2D_verification_{:06}.png".format(i))
 
         # save synth image
         vis.capture_screen_image(synth_image_path)
@@ -164,12 +157,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         vis.capture_depth_image(depth_path)
         depth_float = vis.capture_depth_float_buffer() #returns an image is saved as numpy array though
         np.save(depth_float_path, depth_float)
-
-        # save pointclouds
-        vis.capture_depth_point_cloud(pointcloud_path, convert_to_world_coordinate=False)
-        debug_point_cloud = o3d.io.read_point_cloud(pointcloud_path)
-        vis.capture_depth_point_cloud(pointcloud_world_path, convert_to_world_coordinate=True)
-        debug_point_cloud_world = o3d.io.read_point_cloud(pointcloud_world_path)
 
         # save camera poses
         captured_poses_path = os.path.join(poses_path, "{:05d}.json".format(i))
@@ -195,16 +182,17 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
 
         for j in range(len(kps_train_xy)):
             xy_drawing = np.round(kps_train_xy[j]).astype(int)
-            cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 4, (0, 255, 0), -1)
+            cv2.circle(synth_image_verification, (xy_drawing[0], xy_drawing[1]) , 3, (0, 255, 0), -1)
 
         intrinsics = pose.intrinsic.intrinsic_matrix
         fx = intrinsics[0, 0]
         fy = intrinsics[1, 1]
         cx = intrinsics[0, 2]
         cy = intrinsics[1, 2]
-        -  # extrinsics = pose.extrinsic
+        extrinsics = pose.extrinsic
 
         print("Estimating 3D point coordinates (in camera space) using the depth maps.")
+        data_rows = np.empty([0, row_length])
         for k in range(len(kps_train)):
             keypoint = kps_train[k]
             descriptor = descs_train[k]  # same order as above
@@ -221,7 +209,20 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
             # the points here x,y,z are in camera coordinates
             point_camera_coordinates = np.array([x, y, z, 1]).reshape([4, 1])
 
-        data_rows = np.c_[kps_train_xy_rounded, keypoints_world_points_3D, depths, descs_train]
+            # projecting the camera points (camera coordinate system) on the frame
+            points_projected = pose.intrinsic.intrinsic_matrix.dot(point_camera_coordinates[0:3])
+            points_projected = points_projected // points_projected[2, :]
+            points_projected = points_projected.transpose().astype(int)[0]
+
+            breakpoint()
+
+            data_row = np.append(np.array([xy[0], xy[1], x, y, z, depth]), descriptor).reshape([1, row_length])
+            data_rows = np.r_[data_rows, data_row]
+
+            cv2.circle(synth_image_verification, (points_projected[0], points_projected[1]) , 2, (0, 0, 0), -1)
+
+        breakpoint()
+        
         db.add_feature_data(i, data_rows)
 
     vis.destroy_window()

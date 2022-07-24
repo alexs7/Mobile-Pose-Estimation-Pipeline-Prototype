@@ -271,7 +271,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
 
         depths = depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]].reshape(len(depth_float_map[kps_train_xy_rounded[:, 1], kps_train_xy_rounded[:, 0]]), 1)
 
-        print("Estimating the poses here..")
+        print("Estimating the poses here.. (there is a bit of an offset...)")
         _, rvec, tvec, _ = cv2.solvePnPRansac(keypoints_world_points_3D.astype(np.float32), kps_train_xy_rounded.astype(np.float32), pose.intrinsic.intrinsic_matrix, distCoeffs=None, iterationsCount=3000, confidence=0.99, flags=cv2.SOLVEPNP_P3P)
 
         rot_matrix = cv2.Rodrigues(rvec)[0]  # second value is the jacobian
@@ -291,7 +291,6 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
             cv2.circle(keypoints_only_3D_points_image, (xy_drawing[0], xy_drawing[1]) , 4, (255, 0, 0), 2)
         cv2.imwrite(map_3D_keypoint_image_only_3D_projected_points_and_keypoints_2D_path, keypoints_only_3D_points_image)
 
-        breakpoint()
         data_rows = np.c_[kps_train_xy_rounded, keypoints_world_points_3D, depths, descs_train]
         db.add_feature_data(i, data_rows)
 
