@@ -18,10 +18,10 @@ start = time.time()
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
 synth_images_path = os.path.join(base_path, "synth_images/")
 # images_path = os.path.join(base_path, "IMAGES/all/")
-# depths_path = os.path.join(base_path, "depths/")
+depths_path = os.path.join(base_path, "depths/")
 verifications_path = os.path.join(base_path, "query_verifications/")
 no_images = len(glob.glob(os.path.join(synth_images_path, "*.png")))
-database_path = os.path.join(base_path, "features_data.db")
+database_path = os.path.join(base_path, "features_data_ccs.db")
 query_images_path = os.path.join(base_path, "query_images")
 
 if not os.path.exists(verifications_path):
@@ -47,16 +47,25 @@ synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(synth_no)
 synth_image = cv2.imread(synth_image_path)
 
 kps_query, descs_query = sift.detectAndCompute(query_image, None)
-kps_synth, descs_synth = sift.detectAndCompute(synth_image, None)
+kps_query_xy = np.round(cv2.KeyPoint_convert(kps_query)).astype(int)
+
+# mask
+depth_path = os.path.join(depths_path, "{:05d}.png".format(synth_no))
+depth_float_path = os.path.join(depths_path, "{:05d}_float.npy".format(synth_no))
+depth_map_for_mask = cv2.imread(depth_path, cv2.IMREAD_GRAYSCALE)
+mask = np.copy(depth_map_for_mask)  # this mask will be used for OpenCV
+mask[np.where(mask > 0)] = 255
+
+kps_synth, descs_synth = sift.detectAndCompute(synth_image, mask=mask)
 
 matches = matcher.knnMatch(descs_query, descs_synth, k=2)
 # Need to draw only good matches, so create a mask
 matchesMask = [[0,0] for i in range(len(matches))]
 
-good_matches_counter_between_images = 0
+good_matches = []
 for i,(m,n) in enumerate(matches):
     if m.distance < ratio_thresh * n.distance:
-        good_matches_counter_between_images += 1
+        good_matches.append(m)
         matchesMask[i]=[1,0]
 
 draw_params = dict(matchColor = (0,255,0),
@@ -71,9 +80,38 @@ synth_query_matches_image_path = os.path.join(verifications_path, "synth_query_m
 cv2.imwrite(synth_query_matches_image_path, synth_query_matches_image)
 
 database_features = db.get_feature_data(str(synth_no), row_length)
-descs_train = database_features[:, -128:].astype(np.float32) # last 128 elements (SIFT)
+descs_train = database_features[:, -128:] # last 128 elements (SIFT)
 
-breakpoint()
+kps_synth_xy = np.round(cv2.KeyPoint_convert(kps_synth)).astype(int)
+
+synth_train_idx = np.array([good_match.trainIdx for good_match in good_matches])
+kps_synth_xy_int = kps_synth_xy[synth_train_idx].astype(int)
+
+assert(database_features[:,0:2].all() == kps_synth_xy.all())
+
+correspondences = np.empty([0, 5])
+kps_query_xy_good_only = kps_query_xy[np.array([good_match.queryIdx for good_match in good_matches])]
+for idx in range(kps_synth_xy_int.shape[0]):
+    idx_3D_point = np.where(
+        (database_features[:, 0] == kps_synth_xy_int[idx,0])
+        & (database_features[:, 1] == kps_synth_xy_int[idx,1]))
+    point2D = kps_query_xy_good_only[idx, :]
+    point3D = database_features[idx_3D_point[0][0], 2:5]
+    correspondences = np.r_[correspondences , np.append(point2D, point3D).reshape([1,5]) ]
+
+K = np.loadtxt(sys.argv[4])
+
+_, rvec, tvec, _ = cv2.solvePnPRansac(correspondences[:,2:5], correspondences[:,0:2], K, distCoeffs = np.zeros((5, 1)),
+                                      iterationsCount = 10000, confidence = 0.99, flags = cv2.SOLVEPNP_EPNP)
+
+rot_matrix = cv2.Rodrigues(rvec)[0] #second value is the jacobian
+est_pose_query = np.c_[rot_matrix, tvec]
+est_pose_query = np.r_[est_pose_query, [np.array([0, 0, 0, 1])]]
+
+print("Projecting points to verify..")
+verification_image_path = os.path.join(verifications_path, "verified_frame{:06}.png".format(synth_no))
+save_projected_points(correspondences[:,2:5], correspondences[:,0:2], est_pose_query, K, query_image, verification_image_path)
+
 
 # Old code:
 

@@ -8,9 +8,13 @@ def save_projected_points(points_3D, keypoints_2D, est_pose_query,
     image = real_img.copy()
     points_3D = np.hstack((points_3D, np.ones((points_3D.shape[0], 1))))
     points = K.dot(est_pose_query.dot(points_3D.transpose())[0:3,:])
-    points = points // points[2,:]
+    points = points / points[2,:]
+    # Note that some points will not show up because they are outliers.
+    # To visually check this: look at the matches from the query image to the
+    # synth image. Some query points are matched to wrong synth points.
+    # RANSAC sees them as outliers and discards them, that is why some no blue points over green
     points = points.transpose()
-    
+
     for i in range(len(points)):
         x = int(points[i][0])
         y = int(points[i][1])
@@ -19,5 +23,5 @@ def save_projected_points(points_3D, keypoints_2D, est_pose_query,
         center = (x, y)
         center_real = (x_real, y_real)
         cv2.circle(image, center_real, 4, green, -1)
-        cv2.circle(image, center, 2, blue, -1)
+        cv2.circle(image, center, 3, blue, -1)
     cv2.imwrite(verification_image_path, image)
