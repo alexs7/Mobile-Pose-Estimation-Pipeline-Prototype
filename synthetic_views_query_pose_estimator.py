@@ -109,9 +109,13 @@ est_pose_query = np.c_[rot_matrix, tvec]
 est_pose_query = np.r_[est_pose_query, [np.array([0, 0, 0, 1])]]
 
 print("Projecting points to verify..")
-verification_image_path = os.path.join(verifications_path, "verified_frame{:06}.png".format(synth_no))
+verification_image_path = os.path.join(verifications_path, query_frame)
 save_projected_points(correspondences[:,2:5], correspondences[:,0:2], est_pose_query, K, query_image, verification_image_path)
 
+print("Done!...")
+end = time.time()
+elapsed_time = end - start
+print("Time taken (s): " + str(elapsed_time))
 
 # Old code:
 
