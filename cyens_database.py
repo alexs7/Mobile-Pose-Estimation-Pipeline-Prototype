@@ -45,3 +45,15 @@ class CYENSDatabase(sqlite3.Connection):
         res = res.reshape([res_rows, data_length])
         return res
 
+    def get_all_feature_data(self, data_length):
+        res = self.execute("SELECT data FROM image_data")
+        res = res.fetchall()
+        all_res = np.empty([0, data_length])
+        for result in res:
+            result = result[0]
+            result = self.blob_to_array(result, np.float64)
+            res_rows = int(result.shape[0] / data_length)
+            result = result.reshape([res_rows, data_length])
+            all_res = np.vstack((all_res, result))
+        return all_res
+
