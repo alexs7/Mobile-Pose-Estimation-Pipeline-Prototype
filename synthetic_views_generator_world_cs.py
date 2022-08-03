@@ -1,11 +1,16 @@
+# This file will use world points to try and estimate a world camera pose.
+# A world camera pose can convert from camera space points to word points.
+# You will notice that the blue circles projected on the image are a bit off.
+# This could be because of the RANSAC implementation and the solver.
+# Try these: https://github.com/vlarsson/PoseLib
+# https://github.com/tsattler/RansacLib
+
+import os
 import sys
 import time
-from os.path import join
+import cv2
 import numpy as np
 import open3d as o3d
-import os
-import cv2
-from cvxpnpl import pnp
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -133,11 +138,15 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     row_length = 134
     print("Data size: " + str(data_length))
 
+    # look where use_debug_3D_world_points is used for more details
+    world_point_cloud = o3d.geometry.PointCloud()
+    use_debug_3D_world_points = False
+
+    ctr = vis.get_view_control()
     for i in range(data_length):
         print("Setting up data for pose: " + str(i))
         # in camera coordinates
         pose = trajectory.parameters[i]
-        ctr = vis.get_view_control()
         # will convert to world coordinates here (I found no way to extract the
         # world pose from this method, you can just get it from the camera pose )
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
@@ -207,6 +216,12 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         points_cloud_points = np.asarray(debug_point_cloud_world.points)
         map_3D = np.zeros([depth_float_map.shape[0], depth_float_map.shape[1], 3])
 
+        if(i == 0):
+            world_point_cloud = debug_point_cloud_world
+            world_point_cloud_points_size = np.asarray(world_point_cloud.points).shape[0]
+            colors = [[0, 0.7, 0.7] for i in range(world_point_cloud_points_size)]
+            world_point_cloud.colors = o3d.utility.Vector3dVector(colors)
+
         for h in range(depth_float_map.shape[0]): # height
             for w in range(depth_float_map.shape[1]): # width
                 #  get the 3D point here!
@@ -230,6 +245,7 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
         image_height_zero_based = map_3D.shape[0] - 1
         ys_3D_flipped_for_2D_image = np.array([image_height_zero_based - y for y in ys_3D_flipped])
 
+        # This image is to verify that the 2D points are aligned with the 3D points.
         map_3D_verification_image[ys_3D_flipped_for_2D_image, xs_3D_flipped] = 255
         cv2.imwrite(map3D_image_verification_path, map_3D_verification_image)
 
@@ -242,26 +258,45 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
                                           ys_3D, xs_3D, map_3D[ys_3D, xs_3D]]
 
         map_3D_idxs = np.empty([0,1])
+        # In this loop I will find the keypoints (x,y) only, and their corresponding 3D points
         for kt_idx in range(kps_train_xy_rounded.shape[0]):
-            map_3D_idx = np.where((correspondences_2D_2D_3D[:,0] == ys_3D_kt[kt_idx]) & (correspondences_2D_2D_3D[:,1] == xs_3D_kt[kt_idx]))
+            map_3D_idx = np.where((correspondences_2D_2D_3D[:,0] == ys_3D_kt[kt_idx]) &
+                                  (correspondences_2D_2D_3D[:,1] == xs_3D_kt[kt_idx]))
             map_3D_idxs = np.append(map_3D_idxs, map_3D_idx[0][0])
 
         map_3D_idxs = map_3D_idxs.astype(int)
         keypoints_world_points_3D = correspondences_2D_2D_3D[map_3D_idxs, 4:]
 
-        print("Rendering keypoints' 3D projected points..")
+        print("Rendering keypoints' 3D projected points.. (Only the 3D points from keypoints)")
         pointcloud_verification = o3d.geometry.PointCloud()
         colors = [[0.6, 0, 0] for i in range(keypoints_world_points_3D.shape[0])]
         pointcloud_verification.colors = o3d.utility.Vector3dVector(colors)
         pointcloud_verification.points = o3d.utility.Vector3dVector(keypoints_world_points_3D)
         vis.add_geometry(pointcloud_verification)
 
-        ctr = vis.get_view_control()
+        # Need to set the view again
         ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
         vis.poll_events()
         vis.update_renderer()
 
         vis.capture_screen_image(map_3D_keypoint_image_only_3D_projected_points_path)
+
+        if(use_debug_3D_world_points):
+            vis.remove_geometry(pointcloud_verification)
+            print("Sleeping.. (Remove this for speeding up)")
+            time.sleep(2)
+
+            # This pointcloud only contains the 3D points visible from the frame i=0
+            # I keep rendering it to prove that 3D points are consistent over frames
+            vis.add_geometry(world_point_cloud)
+
+            # Need to set the view again
+            ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+            vis.poll_events()
+            vis.update_renderer()
+
+        print("Sleeping.. (Remove this for speeding up)")
+        time.sleep(3)
 
         keypoints_only_3D_points_image = cv2.imread(map_3D_keypoint_image_only_3D_projected_points_path)
         for j in range(len(kps_train_xy)):

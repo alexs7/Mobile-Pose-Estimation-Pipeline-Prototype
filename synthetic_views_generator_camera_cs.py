@@ -1,11 +1,14 @@
+# This file will use save camera 3D points and their 2D corresponding coordinates
+# A camera pose can convert from world space points to camera 3D points (for example, COLMAP).
+# It uses the depth info to get the 3D points.
+
+import os
 import sys
 import time
-from os.path import join
+
+import cv2
 import numpy as np
 import open3d as o3d
-import os
-import cv2
-from cvxpnpl import pnp
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -52,6 +55,7 @@ def create_cams_from_bundler(bundler_data, cams_csv):
         extrinsics = np.r_[np.c_[rotm, t], np.array([0, 0, 0, 1]).reshape(1, 4)]
         cam_params.extrinsic = extrinsics
         bundler_cams.append(cam_params)
+        breakpoint()
     return bundler_cams
 
 def create_trajectory(base_path):
