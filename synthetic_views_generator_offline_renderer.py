@@ -126,15 +126,14 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     return None
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
-database_path = os.path.join(base_path, "features_data_ccs.db")
 
 start = time.time()
 
 print("Loading objects...")
-mesh_path = os.path.join(base_path, "model_files/EXPORT_Mesh/model.fbx")
+mesh_path = os.path.join(base_path, "model_files/FBX WITH SEPARATE TEXTURES/PLATEIA_DIMARCHON_FRAGMENT_-_18_07_2022.fbx")
 
 print("Reading mesh...")
-mesh = o3d.io.read_triangle_mesh(mesh_path)
+mesh = o3d.io.read_triangle_mesh(mesh_path, print_progress=True)
 
 print("Creating trajectory...")
 trajectory = create_trajectory(base_path)
