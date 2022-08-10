@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 import open3d as o3d
 from PIL import Image, ExifTags
+from tqdm import tqdm
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -25,13 +26,15 @@ def create_cams_from_bundler(base_path, bundler_data, cams_csv):
     # I know the focal length in mm is 30 or 20 from the metadata.
     # The sensor width is, 35mm full frame (35.6×23.8mm) from https://www.sony.co.uk/electronics/interchangeable-lens-cameras/ilce-7m3-body-kit/specifications
     focal_lengths_mm = np.empty([0,2])
-    for path in images_paths:
+    for path in tqdm(images_paths):
         im = Image.open(path)
         exif = { ExifTags.TAGS[k]: v for k, v in im._getexif().items() if k in ExifTags.TAGS }
+        breakpoint() #Checkpoint try to get the EXIF from pycolmap and compare
         focal_length_mm = float(exif['FocalLength'])
         fx = focal_length_mm * exif['ExifImageWidth'] / 35.6
         fy = focal_length_mm * exif['ExifImageHeight'] / 23.8
         focal_lengths_mm = np.r_[focal_lengths_mm, np.array([fx, fy]).reshape(1,2)] #this array is assumed to be sorted with the bundler images
+        breakpoint()
 
     h = 2816
     w = 4233
