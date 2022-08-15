@@ -1,5 +1,6 @@
 # This file will create full size images of the mesh
 # using the plain old Visualizer class does not work because it keeps the window at a set resolution
+# 15/08/2022: Also added depth capture to get the pointcloud
 import glob
 import os
 import sys
@@ -10,7 +11,7 @@ import open3d as o3d
 from PIL import Image, ExifTags
 from tqdm import tqdm
 
-np.set_printoptions(precision=3, suppress=True)
+np.set_printoptions(precision=5, suppress=True)
 
 WIDTH = 4233
 HEIGHT = 2816
@@ -25,16 +26,15 @@ def create_cams_from_bundler(base_path, bundler_data, cams_csv):
     # from https://ksimek.github.io/2013/08/13/intrinsic/
     # I know the focal length in mm is 30 or 20 from the metadata.
     # The sensor width is, 35mm full frame (35.6×23.8mm) from https://www.sony.co.uk/electronics/interchangeable-lens-cameras/ilce-7m3-body-kit/specifications
-    focal_lengths_mm = np.empty([0,2])
+    focal_lengths_px = np.empty([0,2])
     for path in tqdm(images_paths):
         im = Image.open(path)
         exif = { ExifTags.TAGS[k]: v for k, v in im._getexif().items() if k in ExifTags.TAGS }
-        breakpoint() #Checkpoint try to get the EXIF from pycolmap and compare
+        #TODO:  breakpoint() #Checkpoint try to get the EXIF from pycolmap and compare
         focal_length_mm = float(exif['FocalLength'])
         fx = focal_length_mm * exif['ExifImageWidth'] / 35.6
         fy = focal_length_mm * exif['ExifImageHeight'] / 23.8
-        focal_lengths_mm = np.r_[focal_lengths_mm, np.array([fx, fy]).reshape(1,2)] #this array is assumed to be sorted with the bundler images
-        breakpoint()
+        focal_lengths_px = np.r_[focal_lengths_px, np.array([fx, fy]).reshape(1,2)] #this array is assumed to be sorted with the bundler images
 
     h = 2816
     w = 4233
@@ -48,8 +48,8 @@ def create_cams_from_bundler(base_path, bundler_data, cams_csv):
             break
         k = i
         # f = np.fromstring(bundler_data[k-1], sep=" ")[0] # the bundler ones (f = fx, fy)
-        fx = focal_lengths_mm[focal_idx][0]
-        fy = focal_lengths_mm[focal_idx][1]
+        fx = focal_lengths_px[focal_idx][0]
+        fy = focal_lengths_px[focal_idx][1]
         r1 = np.fromstring(bundler_data[k], sep=" ")
         r2 = np.fromstring(bundler_data[k+1], sep=" ")
         r3 = np.fromstring(bundler_data[k+2], sep=" ")
@@ -64,7 +64,7 @@ def create_cams_from_bundler(base_path, bundler_data, cams_csv):
         bundler_cams.append(cam_params)
         focal_idx += 1
 
-    assert(focal_idx == focal_lengths_mm.shape[0]) #sanity check
+    assert(focal_idx == focal_lengths_px.shape[0]) #sanity check
     return bundler_cams
 
 def create_trajectory(base_path):
@@ -103,7 +103,7 @@ def create_trajectory(base_path):
 
     return trajectory
 
-def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, width, height):
+def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
 
     render = o3d.visualization.rendering.OffscreenRenderer(width=width, height=height)
     material = o3d.visualization.rendering.MaterialRecord()
@@ -117,21 +117,60 @@ def custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, wid
     if not os.path.exists(depths_path):
         os.makedirs(depths_path)
 
-    for i in range(len(trajectory.parameters)):
+    for i in tqdm(range(len(trajectory.parameters))):
         print("Saving image {:03d} ..".format(i))
         pose = trajectory.parameters[i]
         render.setup_camera(pose.intrinsic, pose.extrinsic)
+        # rgb image
         image = np.asarray(render.render_to_image())
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert Open3D RGB to OpenCV BGR
         synth_image_path = os.path.join(synth_images_path, "{:05d}.png".format(i))
         cv2.imwrite(synth_image_path,image)
+        # depth image
+        depth = np.asarray(render.render_to_depth_image(z_in_view_space=True))
+        depth_data_path = os.path.join(depths_path, "{:05d}.npy".format(i))
+        np.save(depth_data_path, depth)
+
+        # create pointcloud for debug
+        fx = pose.intrinsic.get_focal_length()[0]
+        fy = pose.intrinsic.get_focal_length()[1]
+        cx = pose.intrinsic.get_principal_point()[0]
+        cy = pose.intrinsic.get_principal_point()[1]
+        # get each pixel from image
+        pointcloud_debug_camera_points = []
+        pointcloud_debug_camera_colors = []
+
+        for y in tqdm(range(depth.shape[0])):
+            for x in range(depth.shape[1]):
+                z = depth[y, x]
+                if(z == np.inf):
+                    continue
+                x_3D = (x - cx) * z / fx # x in 3D
+                y_3D = (y - cy) * z / fy # y in 3D
+                # the points here x,y,z are in camera coordinates
+                point_camera_coordinates = np.array([x_3D, y_3D, z])
+                color = np.flip(image[y,x]) / 255 #BRG to RGB
+                pointcloud_debug_camera_colors.append(color)
+                pointcloud_debug_camera_points.append(point_camera_coordinates)
+
+        # use this code to visualise the point cloud of 1 frame
+        # note that there will be gaps compared to the complete model because there is no depth value for the
+        # points behind the pixels on the frame
+        # pointcloud_debug_camera_points = np.array(pointcloud_debug_camera_points)
+        # pointcloud_debug_camera_colors = np.array(pointcloud_debug_camera_colors)
+        # vis = o3d.visualization.Visualizer()
+        # vis.create_window(width=1920, height=1080)
+        # pointcloud_verification = o3d.geometry.PointCloud()
+        # pointcloud_verification.colors = o3d.utility.Vector3dVector(pointcloud_debug_camera_colors)
+        # pointcloud_verification.points = o3d.utility.Vector3dVector(pointcloud_debug_camera_points[:, 0:3])
+        # vis.add_geometry(pointcloud_verification)
+        # vis.run()
 
     return None
 
 base_path = sys.argv[1] # i.e. /Users/alex/Projects/CYENS/fullpipeline_cyens/cyens_data/Model 1 - Green Line Wall/
 
 start = time.time()
-
 print("Loading objects...")
 mesh_path = os.path.join(base_path, "model_files/FBX WITH SEPARATE TEXTURES/PLATEIA_DIMARCHON_FRAGMENT_-_18_07_2022.fbx")
 
@@ -142,7 +181,7 @@ print("Creating trajectory...")
 trajectory = create_trajectory(base_path)
 
 print("Traversing trajectory...")
-custom_draw_geometry_with_camera_trajectory(mesh, trajectory, base_path, WIDTH, HEIGHT)
+traverse_and_save_frames(mesh, trajectory, base_path, WIDTH, HEIGHT)
 
 print("Done!...")
 end = time.time()

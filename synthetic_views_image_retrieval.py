@@ -10,13 +10,9 @@ query_images = Path('/media/iNicosiaData/data/andreas_models/Model 6 - Plateia D
 db_outputs = Path('/media/iNicosiaData/data/andreas_models/Model 6 - Plateia Dimarchon - Fragment/hloc/db')
 db_image_retrieval_pairs = db_outputs / 'pairs-netvlad.txt'
 query_outputs = Path('/media/iNicosiaData/data/andreas_models/Model 6 - Plateia Dimarchon - Fragment/hloc/query')
-query_image_retrieval_pairs = query_outputs / 'pairs-netvlad.txt'
-
-# sfm_dir = outputs / 'sfm_superpoint_max+superglue'
+query_image_retrieval_pairs = query_outputs / 'pairs.txt'
 
 retrieval_conf = extract_features.confs['openibl'] #'dir' = ResNet - deep image retrieval
-# feature_conf = extract_features.confs['superpoint_max']
-# matcher_conf = match_features.confs['superglue']
 
 print("Extracting global descriptors images..")
 
