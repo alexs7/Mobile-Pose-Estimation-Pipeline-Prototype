@@ -27,7 +27,7 @@ def create_cams_from_bundler(base_path, bundler_data, cams_csv):
     # I know the focal length in mm is 30 or 20 from the metadata.
     # The sensor width is, 35mm full frame (35.6×23.8mm) from https://www.sony.co.uk/electronics/interchangeable-lens-cameras/ilce-7m3-body-kit/specifications
     focal_lengths_px = np.empty([0,2])
-    for path in tqdm(images_paths):
+    for path in images_paths:
         im = Image.open(path)
         exif = { ExifTags.TAGS[k]: v for k, v in im._getexif().items() if k in ExifTags.TAGS }
         #TODO:  breakpoint() #Checkpoint try to get the EXIF from pycolmap and compare
@@ -128,6 +128,7 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         cv2.imwrite(synth_image_path,image)
         # depth image
         depth = np.asarray(render.render_to_depth_image(z_in_view_space=True))
+        depth[depth == np.inf] = 0 #remove inf values
         depth_data_path = os.path.join(depths_path, "{:05d}.npy".format(i))
         np.save(depth_data_path, depth)
 
@@ -140,15 +141,25 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         pointcloud_debug_camera_points = []
         pointcloud_debug_camera_colors = []
 
+        print("meshgrid approach")
+        m, n = depth.shape
+        y, x = np.mgrid[0:m, 0:n] # reverse y,x here because of conventions
+        x_3D = (x - cx) * depth / fx
+        y_3D = (y - cy) * depth / fy
+
+        points_3D_TBR = np.dstack((np.dstack((x_3D, y_3D)), depth)).reshape(height * width, 3)
+        points_3D_TBR[points_3D_TBR[:, 2] == 0] = 0 #clean up large invalid values
+
+        print("iterative approach")
         for y in range(depth.shape[0]):
             for x in range(depth.shape[1]):
-                z = depth[y, x]
-                if(z == np.inf):
-                    continue
-                x_3D = (x - cx) * z / fx # x in 3D
-                y_3D = (y - cy) * z / fy # y in 3D
+                z_it = depth[y, x]
+                # if(z_it == np.inf):
+                #     continue
+                x_3D_it = (x - cx) * z_it / fx # x in 3D
+                y_3D_it = (y - cy) * z_it / fy # y in 3D
                 # the points here x,y,z are in camera coordinates
-                point_camera_coordinates = np.array([x_3D, y_3D, z])
+                point_camera_coordinates = np.array([x_3D_it, y_3D_it, z_it])
                 color = np.flip(image[y,x]) / 255 #BRG to RGB
                 pointcloud_debug_camera_colors.append(color)
                 pointcloud_debug_camera_points.append(point_camera_coordinates)
@@ -156,15 +167,29 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         # use this code to visualise the point cloud of 1 frame
         # note that there will be gaps compared to the complete model because there is no depth value for the
         # points behind the pixels on the frame
-        # pointcloud_debug_camera_points = np.array(pointcloud_debug_camera_points)
-        # pointcloud_debug_camera_colors = np.array(pointcloud_debug_camera_colors)
-        # vis = o3d.visualization.Visualizer()
-        # vis.create_window(width=1920, height=1080)
-        # pointcloud_verification = o3d.geometry.PointCloud()
-        # pointcloud_verification.colors = o3d.utility.Vector3dVector(pointcloud_debug_camera_colors)
-        # pointcloud_verification.points = o3d.utility.Vector3dVector(pointcloud_debug_camera_points[:, 0:3])
-        # vis.add_geometry(pointcloud_verification)
-        # vis.run()
+
+        pointcloud_debug_camera_points_b = np.array(pointcloud_debug_camera_points)
+        pointcloud_debug_camera_colors_b = np.array(pointcloud_debug_camera_colors)
+
+        pointcloud_debug_camera_points = points_3D_TBR
+        pointcloud_debug_camera_colors = np.flip((image.reshape(height * width, 3) / 255) , axis = 1)
+
+        breakpoint()
+
+        vis = o3d.visualization.Visualizer()
+        vis.create_window(width=1920, height=1080)
+        pointcloud_verification = o3d.geometry.PointCloud()
+        pointcloud_verification.colors = o3d.utility.Vector3dVector(pointcloud_debug_camera_colors)
+        pointcloud_verification.points = o3d.utility.Vector3dVector(pointcloud_debug_camera_points)
+        vis.add_geometry(pointcloud_verification)
+        print("Added pointcloud")
+        ctr = vis.get_view_control()
+        pose.extrinsic = np.eye(4) #set to origin, since points are in camera space
+        ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
+        vis.poll_events()
+        vis.update_renderer()
+        print("Updated renderer")
+        vis.run()
 
     return None
 
