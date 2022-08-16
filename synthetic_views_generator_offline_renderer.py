@@ -109,18 +109,16 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
     material = o3d.visualization.rendering.MaterialRecord()
     render.scene.add_geometry("mesh", mesh, material)
 
-    synth_images_path = os.path.join(base_path, "synth_images/")
-    depths_path = os.path.join(base_path, "depths/")
-    points_3D_path = os.path.join(base_path, "depths/")
+    mesh_data_path = os.path.join(base_path, "mesh_data/")
 
-    if not os.path.exists(synth_images_path):
-        os.makedirs(synth_images_path)
-    if not os.path.exists(depths_path):
-        os.makedirs(depths_path)
+    if not os.path.exists(mesh_data_path):
+        os.makedirs(mesh_data_path)
 
     for i in tqdm(range(len(trajectory.parameters))):
-        print("Saving image {:03d} ..".format(i))
         pose = trajectory.parameters[i]
+        pose_image_path = os.path.join(mesh_data_path, "pose_in_cc_{:05d}.png".format(i))
+        o3d.io.write_pinhole_camera_parameters(pose_image_path, pose) # save the pose in camera coordinates
+
         # setup_camera calls cpp SetupCamera that calls SetupCameraAsPinholeCamera, from Camera.cpp in Open3D source code
         # https://github.com/isl-org/Open3D/blob/master/cpp/open3d/visualization/rendering/Camera.cpp#L38
         # so if you pass a camera pose in camera space it will convert it into world space , wtf
@@ -128,12 +126,12 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         # rgb image
         image = np.asarray(render.render_to_image())
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)  # Convert Open3D RGB to OpenCV BGR
-        synth_image_path = os.path.join(synth_images_path, "image_{:05d}.png".format(i))
+        synth_image_path = os.path.join(mesh_data_path, "image_{:05d}.png".format(i))
         cv2.imwrite(synth_image_path,image)
         # depth image
         depth = np.asarray(render.render_to_depth_image(z_in_view_space=True))
         depth[depth == np.inf] = 0 #remove inf values
-        depth_data_path = os.path.join(depths_path, "depth{:05d}.npy".format(i))
+        depth_data_path = os.path.join(mesh_data_path, "depth_{:05d}.npy".format(i))
         np.save(depth_data_path, depth)
 
         fx = pose.intrinsic.get_focal_length()[0]
@@ -141,16 +139,15 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         cx = pose.intrinsic.get_principal_point()[0]
         cy = pose.intrinsic.get_principal_point()[1]
 
-        print("meshgrid approach")
         m, n = depth.shape
         y, x = np.mgrid[0:m, 0:n] # reverse y,x here because of conventions
         x_3D = (x - cx) * depth / fx
         y_3D = (y - cy) * depth / fy
 
         # these points are in camera coordinate system so if you want to view them you have to do so from the
-        # origin, not from the pose. If you use the pose it will not make sense, first
+        # origin, not from the pose. If you use the pose it will not make sense, I tried it, it doesn't show anything.
         points_3D = np.dstack((np.dstack((x_3D, y_3D)), depth))
-        points_3D_path = os.path.join(depths_path, "points_3D_{:05d}.npy".format(i))
+        points_3D_path = os.path.join(mesh_data_path, "points_3D_{:05d}.npy".format(i))
         np.save(points_3D_path, points_3D)
 
         # the code below is used to check if the pointcloud reconstructed makes sense
