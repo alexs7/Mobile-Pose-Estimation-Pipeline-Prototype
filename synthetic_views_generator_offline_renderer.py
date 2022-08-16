@@ -116,7 +116,7 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
 
     for i in tqdm(range(len(trajectory.parameters))):
         pose = trajectory.parameters[i]
-        pose_image_path = os.path.join(mesh_data_path, "pose_in_cc_{:05d}.png".format(i))
+        pose_image_path = os.path.join(mesh_data_path, "pose_in_cc_{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(pose_image_path, pose) # save the pose in camera coordinates
 
         # setup_camera calls cpp SetupCamera that calls SetupCameraAsPinholeCamera, from Camera.cpp in Open3D source code
