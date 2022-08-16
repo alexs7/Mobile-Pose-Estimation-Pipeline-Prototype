@@ -107,6 +107,7 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
 
     render = o3d.visualization.rendering.OffscreenRenderer(width=width, height=height)
     material = o3d.visualization.rendering.MaterialRecord()
+    print("Adding mesh..")
     render.scene.add_geometry("mesh", mesh, material)
 
     mesh_data_path = os.path.join(base_path, "mesh_data/")
