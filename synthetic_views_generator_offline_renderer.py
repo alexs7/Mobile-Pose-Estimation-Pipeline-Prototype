@@ -140,7 +140,7 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         pointcloud_debug_camera_points = []
         pointcloud_debug_camera_colors = []
 
-        for y in tqdm(range(depth.shape[0])):
+        for y in range(depth.shape[0]):
             for x in range(depth.shape[1]):
                 z = depth[y, x]
                 if(z == np.inf):
