@@ -111,6 +111,7 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
 
     synth_images_path = os.path.join(base_path, "synth_images/")
     depths_path = os.path.join(base_path, "depths/")
+    points_3D_path = os.path.join(base_path, "depths/")
 
     if not os.path.exists(synth_images_path):
         os.makedirs(synth_images_path)
@@ -120,6 +121,9 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
     for i in tqdm(range(len(trajectory.parameters))):
         print("Saving image {:03d} ..".format(i))
         pose = trajectory.parameters[i]
+        # setup_camera calls cpp SetupCamera that calls SetupCameraAsPinholeCamera, from Camera.cpp in Open3D source code
+        # https://github.com/isl-org/Open3D/blob/master/cpp/open3d/visualization/rendering/Camera.cpp#L38
+        # so if you pass a camera pose in camera space it will convert it into world space , wtf
         render.setup_camera(pose.intrinsic, pose.extrinsic)
         # rgb image
         image = np.asarray(render.render_to_image())
@@ -143,6 +147,8 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         x_3D = (x - cx) * depth / fx
         y_3D = (y - cy) * depth / fy
 
+        # these points are in camera coordinate system so if you want to view them you have to do so from the
+        # origin, not from the pose. If you use the pose it will not make sense, first
         points_3D = np.dstack((np.dstack((x_3D, y_3D)), depth))
         points_3D_path = os.path.join(depths_path, "points_3D_{:05d}.npy".format(i))
         np.save(points_3D_path, points_3D)
