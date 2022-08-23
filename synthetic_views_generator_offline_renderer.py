@@ -116,12 +116,7 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
     if not os.path.exists(mesh_data_path):
         os.makedirs(mesh_data_path)
 
-    vis = o3d.visualization.Visualizer()
-    vis.create_window(width=1920, height=1080)
-    pointcloud_verification = o3d.geometry.PointCloud()
-    origin = o3d.geometry.TriangleMesh.create_coordinate_frame()
-    vis.add_geometry(origin)
-
+    print("Generating data..")
     for i in tqdm(range(len(trajectory.parameters))):
         pose = trajectory.parameters[i]
         pose_image_path = os.path.join(mesh_data_path, "pose_{:05d}.json".format(i))
