@@ -2,9 +2,9 @@ import cv2
 import numpy as np
 from  sklearn.metrics import mean_squared_error
 
-def save_points_2D_2D(points_2D_est, points_2D_gt, image, path):
-    green = (0, 255, 0)
-    blue = (255, 0, 0)
+def save_points_2D_2D(points_2D_est, points_2D_gt, image, path, est_size = 4, gt_size = 3):
+    green = (0, 255, 0) #GT
+    blue = (255, 0, 0) #EST
     for i in range(len(points_2D_est)):
         x = int(points_2D_est[i][0])
         y = int(points_2D_est[i][1])
@@ -12,8 +12,8 @@ def save_points_2D_2D(points_2D_est, points_2D_gt, image, path):
         y_real = int(points_2D_gt[i][1])
         center = (x, y)
         center_real = (x_real, y_real)
-        cv2.circle(image, center_real, 4, green, -1)
-        cv2.circle(image, center, 3, blue, -1)
+        cv2.circle(image, center_real, est_size, green, -1)
+        cv2.circle(image, center, gt_size, blue, -1)
     cv2.imwrite(path, image)
 
 def save_projected_points(points_3D, keypoints_2D, est_pose_query,

@@ -10,6 +10,7 @@ import numpy as np
 import open3d as o3d
 from PIL import Image, ExifTags
 from tqdm import tqdm
+from synthetic_views_pose_solvers import opencv_pose, pycolmap_wrapper_absolute_pose, project_points, add_ones
 
 np.set_printoptions(precision=5, suppress=True)
 
@@ -115,9 +116,15 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
     if not os.path.exists(mesh_data_path):
         os.makedirs(mesh_data_path)
 
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(width=1920, height=1080)
+    pointcloud_verification = o3d.geometry.PointCloud()
+    origin = o3d.geometry.TriangleMesh.create_coordinate_frame()
+    vis.add_geometry(origin)
+
     for i in tqdm(range(len(trajectory.parameters))):
         pose = trajectory.parameters[i]
-        pose_image_path = os.path.join(mesh_data_path, "pose_in_cc_{:05d}.json".format(i))
+        pose_image_path = os.path.join(mesh_data_path, "pose_{:05d}.json".format(i))
         o3d.io.write_pinhole_camera_parameters(pose_image_path, pose) # save the pose in camera coordinates
 
         # setup_camera calls cpp SetupCamera that calls SetupCameraAsPinholeCamera, from Camera.cpp in Open3D source code
@@ -151,24 +158,12 @@ def traverse_and_save_frames(mesh, trajectory, base_path, width, height):
         points_3D_path = os.path.join(mesh_data_path, "points_3D_{:05d}.npy".format(i))
         np.save(points_3D_path, points_3D)
 
-        # the code below is used to check if the pointcloud reconstructed makes sense
-        # just keep in mind that the viewport is less than 1920 by 1080 (open3d bug), so you might
-        # see a portion of the point cloud
-        # vis = o3d.visualization.Visualizer()
-        # vis.create_window(width=1920, height=1080)
-        # pointcloud_verification = o3d.geometry.PointCloud()
-        # pointcloud_verification.colors = o3d.utility.Vector3dVector(points_3D)
-        # colors = np.flip((image.reshape(height * width, 3) / 255) , axis = 1)
-        # pointcloud_verification.points = o3d.utility.Vector3dVector(colors)
-        # vis.add_geometry(pointcloud_verification)
-        # print("Added pointcloud")
-        # ctr = vis.get_view_control()
-        # pose.extrinsic = np.eye(4) #set to origin, since points are in camera space
-        # ctr.convert_from_pinhole_camera_parameters(pose, allow_arbitrary=True)
-        # vis.poll_events()
-        # vis.update_renderer()
-        # print("Updated renderer")
-        # vis.run()
+        world_pose = o3d.camera.PinholeCameraParameters()
+        world_pose.intrinsic = o3d.camera.PinholeCameraIntrinsic(pose.intrinsic)
+        world_pose.extrinsic = np.linalg.inv(pose.extrinsic)
+
+        world_pose_image_path = os.path.join(mesh_data_path, "world_pose_{:05d}.json".format(i))
+        o3d.io.write_pinhole_camera_parameters(world_pose_image_path, pose)  # save the pose in world coordinates
 
     return None
 
